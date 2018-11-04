@@ -10,13 +10,28 @@ from .block import Block
 
 class Broker:
     def __init__(self):
-        self.current_blocks = {}
-        self.queue = []
+        """
+        This class represents the message transfer agent type.
+        """
+        self.blocks = {}  # blocks
+        self.queue = []  # Message Queue
 
-    def process(self, message: email.message.EmailMessage):
-        # The broker receives another message, so lets process it and see if it is part of the current queue.
+    def __str__(self):
+        queue = '*' * 25 + ' Queue ' + '*' * 25 + '\n' + f'{self.queue}' + '\n'
+        blocks = '*' * 25 + ' Queue ' + '*' * 25 + '\n' + f'{self.blocks}' + '\n'
+        return queue + blocks
+
+    def enqueue(self, message: email.message.EmailMessage):
+        self.queue.append(message)
+
+    def dequeue(self):
+        return self.queue.pop(0)
+
+    def process(self):
+        # The broker received another message, so lets process it and see if it is part of the current queue.
         # The client should have used generate_block_id to create the identifier and it should come in the
         # email Subject. Parse the email and get the Subject.
+        message = self.dequeue()
 
         # Parse the subject and get the identifier
         identifier = 'None or some identifier should be here after parsing'
@@ -26,5 +41,5 @@ class Broker:
         else:
             incoming_message = Message(Block.generate_block_id(), message)
 
-        # See what block it belongs to, insert it and check block's lifetime
-        Block.match_message_to_block(incoming_message, self.current_blocks)
+        # See what block it belongs to, insert it and check the block's lifetime
+        Block.match_message_with_block(incoming_message, self.blocks)

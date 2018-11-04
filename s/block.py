@@ -16,5 +16,5 @@ class Block:
     pass
 
     @staticmethod
-    def match_message_to_block(self, message, blocks):
+    def match_message_with_block(message, blocks):
         pass

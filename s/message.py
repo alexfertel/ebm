@@ -13,6 +13,9 @@ class Message:
         self._message = message  # Reference to the actual message
         self._block = None  # Should be the containing block
 
+    def __str__(self):
+        return 'Message ' + self._id
+
     @property
     def block(self):
         """
