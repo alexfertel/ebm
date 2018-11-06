@@ -1,6 +1,6 @@
 # Entry point and loop of the server
 # TODO: Refactor sending and receiving logic into another file.
-from .mta import Broker
+from shared.mta import Broker
 
 
 class EBMS:

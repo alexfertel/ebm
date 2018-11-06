@@ -3,14 +3,15 @@ import email
 
 
 class Message:
-    def __init__(self, identifier, message: email.message.EmailMessage):
+    def __init__(self, identifier, text: str):
         """
         This class represents the structure of an EBM message.
         :param identifier: int | string
-        :param message: email.message.EmailMessage
+        :param text: str
         """
         self._id = identifier  # Must be unique, should represent the place(index) in the block
-        self._message = message  # Reference to the actual message
+        self._text = text  # Must be unique, should represent the place(index) in the block
+        # self._message = message  # Reference to the actual message
         self._block = None  # Should be the containing block
 
     def __str__(self):
@@ -31,3 +32,7 @@ class Message:
         :return: None
         """
         self._block = value
+
+    @staticmethod
+    def generate_message_id(block):
+        pass
