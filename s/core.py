@@ -50,9 +50,3 @@ class EBMS:
         :return: None
         """
         self.p2p.remove((user1, user2))
-
-    def listen(self):
-        while True:
-            pass
-
-

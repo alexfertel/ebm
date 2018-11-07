@@ -45,3 +45,7 @@ class Broker(Connectible, Communicatable):
 
         # See what message it belongs to, insert it and check the message's lifetime
         Message.match_block_with_message(incoming_block, self.messages)
+
+    def loop(self):
+        while True:
+            print(self)
