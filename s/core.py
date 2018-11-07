@@ -4,12 +4,10 @@ from shared.connectible import Connectible
 from shared.mta import Broker
 
 
-class EBMS(Connectible, Communicatable):
+class EBMS:
     def __init__(self, server_email_addr):
-        super().__init__(server_email_addr)
-
         # init broker
-        self.broker = Broker()
+        self.mta = Broker(server_email_addr)
 
     def listen(self):
         while True:

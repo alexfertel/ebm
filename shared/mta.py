@@ -1,45 +1,47 @@
 # Message Transfer Agent
 # This retains the logic of controlling and managing message correctness
-# So, how do you know that a message is part of a block? how do you identify
-# a message? Messages should have ids, and we should keep a dict holding,
+# So, how do you know that a block is part of a message? how do you identify
+# a block? Blocks should have ids, and we should keep a dict holding
 # currently known message blocks while they're alive.
 import email
 from .message import Message
 from .block import Block
 
 
-class Broker:
-    def __init__(self):
+class Broker(Connectible, Communicatable):
+    def __init__(self, addr):
         """
         This class represents the message transfer agent type.
         """
-        self.blocks = {}  # blocks
-        self.queue = []  # Message Queue
+        self.messages = {}  # blocks
+        self.queue = []  # Block queue
+
+        super().__init__(addr)
 
     def __str__(self):
         queue = '*' * 25 + ' Queue ' + '*' * 25 + '\n' + f'{self.queue}' + '\n'
-        blocks = '*' * 25 + ' Queue ' + '*' * 25 + '\n' + f'{self.blocks}' + '\n'
-        return queue + blocks
+        messages = '*' * 25 + ' Queue ' + '*' * 25 + '\n' + f'{self.messages}' + '\n'
+        return queue + messages
 
-    def enqueue(self, message: email.message.EmailMessage):
+    def enqueue(self, message):
         self.queue.append(message)
 
     def dequeue(self):
         return self.queue.pop(0)
 
     def process(self):
-        # The broker received another message, so lets process it and see if it is part of the current queue.
+        # The broker received another block, so lets process it and see if it is part of the current message.
         # The client should have used generate_block_id to create the identifier and it should come in the
         # email Subject. Parse the email and get the Subject.
-        message = self.dequeue()
+        block = self.dequeue()
 
         # Parse the subject and get the identifier
         identifier = 'None or some identifier should be here after parsing'
 
         if identifier:
-            incoming_message = Message(identifier, message)
+            incoming_block = Block(identifier, block)
         else:
-            incoming_message = Message(Block.generate_block_id(), message)
+            incoming_block = Block(Block.generate_block_id(), block)
 
-        # See what block it belongs to, insert it and check the block's lifetime
-        Block.match_message_with_block(incoming_message, self.blocks)
+        # See what message it belongs to, insert it and check the message's lifetime
+        Message.match_block_with_message(incoming_block, self.messages)

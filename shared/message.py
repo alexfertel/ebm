@@ -1,60 +1,44 @@
-# This file retains the structure of _messages in order to handle them.
-import logging
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger('MESSAGE')
+# This file retains the structure of blocks in order to handle them.
+import time
+import copy
+from block import Block
+import email
 
 
 class Message:
-    def __init__(self, identifier, text: str):
-        """
-        This class represents the structure of an EBM message.
-        :param identifier: int | string
-        :param text: str
-        """
-        self._id = identifier  # Must be unique, should represent the place(index) in the block
-        self._text = text  # Must be unique, should represent the place(index) in the block
-        # self._message = message  # Reference to the actual message
-        self._block = None  # Should be the containing block
+    def __init__(self):
+        self._id = Message.generate_message_id()
+        self._blocks = []
 
-    def __repr__(self):
-        return f'Message: {self._id} from Block: {self.block.id}'
+    def __len__(self):
+        return len(self._blocks)
+
+    def __str__(self):
+        return f'Message\nID: {self._id}\nBlocks: {self._blocks}'
 
     @property
-    def text(self):
-        return self._text
+    def id(self):
+        return str(self._id)
 
     @property
-    def block(self):
-        """
-        This is the property exposing the containing block of this message or -1 in case of not knowing
-        :return: int
-        """
-        return self._block if self._block else -1
-
-    def set_block(self, value):
-        """
-        This is a wrapper of the setter of the containing block of this message
-        :param value: the identifier of the block
-        :return: None
-        """
-        self._block = value
+    def blocks(self):
+        return copy.deepcopy(self._blocks)
 
     @staticmethod
-    def generate_message_id(block):
-        return block.id + 'm' + str(len(block))
+    def generate_message_id():
+        """
+        Should think of a way to generate message ids in order to keep
+        them unique but to be easily mappable to its blocks.
+        :return: int | string
+        """
+        return 'M' + str(int(time.time() * 10000000))
 
+    @staticmethod
+    def match_block_with_message(block, messages):
+        pass
 
-def test():
-    from block import Block
-    b = Block()
+    def add(self, block_text):
+        block = Block(Block.generate_block_id(self), block_text)
+        block.set_message(self)
 
-    b.add('Hola!!')
-
-    logger.info(b)
-    logger.info(b.messages[0])
-    logger.info(b.messages[0].text)
-
-
-if __name__ == '__main__':
-    test()
+        self._blocks.append(block)
