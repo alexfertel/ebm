@@ -1,24 +1,15 @@
 # Entry point and loop of the server
-# TODO: Refactor sending and receiving logic into another file.
+from shared.communicatable import Communicatable
+from shared.connectible import Connectible
 from shared.mta import Broker
 
 
-class EBMS:
-    def __init__(self, email_addr):
+class EBMS(Connectible, Communicatable):
+    def __init__(self, server_email_addr):
+        super().__init__(server_email_addr)
+
         # init broker
         self.broker = Broker()
-
-        # set server email
-        self.email_addr = email_addr
-
-    def connect(self, email):
-        pass
-
-    def send(self, email, msg):
-        pass
-
-    def recv(self):
-        pass
 
     def listen(self):
         while True:
