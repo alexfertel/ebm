@@ -1,5 +1,8 @@
-# This file retains the structure of messages in order to handle them.
-import email
+# This file retains the structure of _messages in order to handle them.
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('MESSAGE')
 
 
 class Message:
@@ -14,8 +17,12 @@ class Message:
         # self._message = message  # Reference to the actual message
         self._block = None  # Should be the containing block
 
-    def __str__(self):
-        return 'Message ' + self._id
+    def __repr__(self):
+        return f'Message: {self._id} from Block: {self.block.id}'
+
+    @property
+    def text(self):
+        return self._text
 
     @property
     def block(self):
@@ -35,4 +42,19 @@ class Message:
 
     @staticmethod
     def generate_message_id(block):
-        pass
+        return block.id + 'm' + str(len(block))
+
+
+def test():
+    from block import Block
+    b = Block()
+
+    b.add('Hola!!')
+
+    logger.info(b)
+    logger.info(b.messages[0])
+    logger.info(b.messages[0].text)
+
+
+if __name__ == '__main__':
+    test()
