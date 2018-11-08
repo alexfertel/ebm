@@ -9,14 +9,28 @@ import ssl
 
 
 class EBMC:
-    def __init__(self, client_email_addr):
+    def __init__(self, client_email_addr, server_addr):
+        self.server_addr = server_addr
         self.id = -1
 
-        self.mta = Broker(client_email_addr)
+        self.mta: Communicatable = Broker(client_email_addr)
 
     # returns an ID
-    def register(self, email, password) -> int:
-        return 1
+    def register(self, email, password):
+        subject = {
+            topic: 'REGISTER',
+            protocol: 3
+        }
 
-    def login(self, email, password) -> bool:
+        self.mta.send(self.server_addr, subject, '')
+
+    def login(self, email, password):
+        subject = {
+            topic: 'LOGIN',
+            protocol: 3
+        }
+
+        self.mta.send(self.server_addr, subject, '')
+
+    def add_email(self, email):
         pass

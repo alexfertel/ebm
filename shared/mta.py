@@ -37,11 +37,7 @@ class Broker(Connectible, Communicatable):
 
         # Parse the subject and get the identifier
         identifier = 'None or some identifier should be here after parsing'
-
-        if identifier:
-            incoming_block = Block(identifier, block)
-        else:
-            incoming_block = Block(Block.generate_block_id(), block)
+        incoming_block = Block(identifier, block)
 
         # See what message it belongs to, insert it and check the message's lifetime
         Message.match_block_with_message(incoming_block, self.messages)
