@@ -15,6 +15,9 @@ class EBMC:
 
         self.mta: Communicatable = Broker(client_email_addr)
 
+        # TODO: This needs tuning, i realized we aren't seeing the addresses correctly
+        self.mta.connect(self.client_email_addr)
+
     # returns an ID
     def register(self, email, password):
         subject = {

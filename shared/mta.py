@@ -42,6 +42,27 @@ class Broker(Connectible, Communicatable):
         # See what message it belongs to, insert it and check the message's lifetime
         Message.match_block_with_message(incoming_block, self.messages)
 
+        # TODO: Keep going! :)
+
     def loop(self):
         while True:
             print(self)
+
+            # Should start with the synchronization of the imap server,
+            # fetching new emails. I think this is of the upmost importance,
+            # because new emails could mean errors or p2p messages.
+            self.recv()  # Enqueue the blocks here or do something like:
+            # next_batch = self.recv()
+            # for block in next_batch:
+            #     self.process(block)
+
+            # Process the next item in the queue, the goal should be
+            # an item per iteration
+            self.process()
+
+            # TODO: Maybe check the status of the replicated servers if this is a server?
+            # TODO: Replicate if needed.
+
+            # TODO: Multiple queues for the subscriptions and p2ps?
+
+            # TODO: There is not much more, right?
