@@ -20,6 +20,9 @@ class Block:
     def __repr__(self):
         return f'Block: {self._id} from Message: {self.message.id}'
 
+    def __str__(self):
+        return 'Subject:{message_id: %s, block_id: %s} %s',(self.message.id,self._id,self.text)
+
     @property
     def text(self):
         return self._text

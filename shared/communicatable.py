@@ -16,10 +16,10 @@ class Communicatable:
         :param body: str
         :return: bool
         """
-        block = Block()
+        # block = Block()
 
-        while len(msg) > 2.4e+7:
-            pass
+        # while len(msg) > 2.4e+7:
+        #     pass
 
     def recv(self):
         pass

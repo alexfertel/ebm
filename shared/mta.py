@@ -45,3 +45,38 @@ class Broker(Connectible, Communicatable):
     def loop(self):
         while True:
             print(self)
+    
+  
+
+
+    def send(self, address: list, subject: str, body: str):
+        
+        max_length = 2.4e+7
+        blocks = cut(body, max_length)
+
+        msg = Message()
+
+        for item in blocks:
+            msg.add(item) 
+        
+        for block in msg.blocks():
+            # tener en cuenta que este metodo retorna un diccionarion con los correos q no se pudieron enviar, tambien retorna el error que ocurrio
+            self.smtp.send_message(block.__str__(), from_addr= 'myemail@test.com', to_addrs= address )
+                   
+
+
+def cut(body:str, max_length:int)->list:
+    l = len(body)
+    if max_length > l:
+        val = ''
+        result = []
+        for i in range(l):
+            if i % max_length == 0:
+                result.push(val)
+                val = ''
+            else:
+                val += body[i]
+        return result
+
+    else:
+        return [body]
