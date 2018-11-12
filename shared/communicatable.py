@@ -21,10 +21,7 @@ class Communicatable:
         """
         message = Message()
 
-        while len(msg) > 2.4e+7:
-            pass
-
-        json_subject = json.dumps(subject)
+        json_subject = json.dumps(subject, separators=(',', ':'))
 
     def recv(self):
         """
