@@ -80,30 +80,30 @@ class Broker(Connectible, Communicatable):
                 completed_message = merge(self.message[block.message])
 
     @staticmethod
-    def merge(items):
+    def merge(items: list[Blocks]):
         """
         Merge all blocks of the same message
         """
+        sort(items, key=lambda x: x.index)
+        return ''.join(map(lambda x: x.text, items))
 
-        pass
-      
     def send(self, address: list, subject: str, body: str):
-        
-        max_length = 2.4e+7
+
         blocks = cut(body, max_length)
 
         msg = Message()
 
         for item in blocks:
-            msg.add(item) 
-        
+            msg.add(item)
+
         for block in msg.blocks():
-            # tener en cuenta que este metodo retorna un diccionario con los correos q no se pudieron enviar, tambien retorna el error que ocurrio
-            self.smtp.send_message(block.__str__() + '##NumberOfBlocks##'+ str(len(blocks)) , from_addr= 'myemail@test.com', to_addrs= address )
-                   
+            # tener en cuenta que este metodo retorna un diccionario con los correos q no se pudieron enviar,
+            # tambien retorna el error que ocurrio.
+            self.smtp.send_message(block.__str__() + '##NumberOfBlocks##' + str(len(blocks)),
+                                   from_addr='myemail@test.com', to_addrs=address)
 
 
-def cut(body:str, max_length:int)->list:
+def cut(body: str, max_length: int = 1000000) -> list:
     l = len(body)
     if max_length > l:
         val = ''
@@ -113,7 +113,7 @@ def cut(body:str, max_length:int)->list:
                 result.push(val)
                 val = ''
             else:
-                val += body[i] if i != l else body[i] 
+                val += body[i] if i != l else body[i]
         return result
 
     else:

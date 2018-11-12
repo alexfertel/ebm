@@ -13,7 +13,7 @@ class Block:
         :param text: str
         """
         self._id = identifier  # Must be unique, should represent the place(index) in the block
-        self._text = text  # Must be unique, should represent the place(index) in the block
+        self._text = text  # The part of the body that this block carries
         # self._message = message  # Reference to the actual message
         self._message = None  # Should be the containing block
         self._number_of_blocks = 0
@@ -25,12 +25,12 @@ class Block:
         return 'Subject:{message_id: %s, block_id: %s} %s',(self.message.id,self._id,self.text)
 
     @property
-    def number(self):
+    def index(self):
         """
-        This is the property exposing the number of blocks of this message
+        This is the property exposing the index of this block in its message
         :return: int
         """
-        return self._number_of_blocks
+        return int(self.id.split('B')[1])
 
     @property
     def text(self):
