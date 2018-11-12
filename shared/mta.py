@@ -6,6 +6,7 @@
 import email
 from .message import Message
 from .block import Block
+from ..config import *
 
 
 class Broker(Connectible, Communicatable):
@@ -103,7 +104,7 @@ class Broker(Connectible, Communicatable):
                                    from_addr='myemail@test.com', to_addrs=address)
 
 
-def cut(body: str, max_length: int = 1000000) -> list:
+def cut(body: str, max_length: int = message_length) -> list:
     l = len(body)
     if max_length > l:
         val = ''
