@@ -6,8 +6,7 @@
 import email
 from .message import Message
 from .block import Block
-from ..config import *
-
+from .utils import cut
 
 class Broker(Connectible, Communicatable):
     def __init__(self, addr):
@@ -103,19 +102,3 @@ class Broker(Connectible, Communicatable):
             self.smtp.send_message(block.__str__() + '##NumberOfBlocks##' + str(len(blocks)),
                                    from_addr='myemail@test.com', to_addrs=address)
 
-
-def cut(body: str, max_length: int = message_length) -> list:
-    l = len(body)
-    if max_length > l:
-        val = ''
-        result = []
-        for i in range(l):
-            if i % max_length == 0:
-                result.push(val)
-                val = ''
-            else:
-                val += body[i] if i != l else body[i]
-        return result
-
-    else:
-        return [body]
