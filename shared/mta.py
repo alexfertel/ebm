@@ -23,8 +23,8 @@ class Broker(Connectible, Communicatable):
         messages = '*' * 25 + ' Queue ' + '*' * 25 + '\n' + f'{self.messages}' + '\n'
         return queue + messages
 
-    def enqueue(self, message):
-        self.queue.append(message)
+    def enqueue(self, block):
+        self.queue.append(block)
 
     def dequeue(self):
         return self.queue.pop(0)
@@ -36,19 +36,33 @@ class Broker(Connectible, Communicatable):
         block = self.dequeue()
 
         # Parse the subject and get the identifier
-        identifier = 'None or some identifier should be here after parsing'
-        incoming_block = Block(identifier, block)
+        # identifier = 'None or some identifier should be here after parsing'
+        # incoming_block = Block(identifier, block)
 
         # See what message it belongs to, insert it and check the message's lifetime
-        Message.match_block_with_message(incoming_block, self.messages)
+        # Message.match_block_with_message(incoming_block, self.messages)
 
     def loop(self):
         while True:
-            print(self)
-    
-  
+            # aqui ver donde es que se reciben los correos para parsearlos y convertirlos en bloques, y asi poder agregar la cantidad de bloques que tiene el msg
 
+            block = self.dequeue()
+            if self.block.message in self.messages:
+                self.message[block.message].push(block)
+            else:
+                self.message[block.message] = [block]
+            
+            if len(self.message[block.message]) == block._number_of_blocks:
+                completed_message = merge(self.message[block.message])
 
+    @staticmethod
+    def merge(items):
+        """
+        Merge all blocks of the same message
+        """
+
+        pass
+      
     def send(self, address: list, subject: str, body: str):
         
         max_length = 2.4e+7
@@ -60,8 +74,8 @@ class Broker(Connectible, Communicatable):
             msg.add(item) 
         
         for block in msg.blocks():
-            # tener en cuenta que este metodo retorna un diccionarion con los correos q no se pudieron enviar, tambien retorna el error que ocurrio
-            self.smtp.send_message(block.__str__(), from_addr= 'myemail@test.com', to_addrs= address )
+            # tener en cuenta que este metodo retorna un diccionario con los correos q no se pudieron enviar, tambien retorna el error que ocurrio
+            self.smtp.send_message(block.__str__() + '##NumberOfBlocks##'+ str(len(blocks)) , from_addr= 'myemail@test.com', to_addrs= address )
                    
 
 
@@ -75,7 +89,7 @@ def cut(body:str, max_length:int)->list:
                 result.push(val)
                 val = ''
             else:
-                val += body[i]
+                val += body[i] if i != l else body[i] 
         return result
 
     else:

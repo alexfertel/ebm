@@ -16,12 +16,21 @@ class Block:
         self._text = text  # Must be unique, should represent the place(index) in the block
         # self._message = message  # Reference to the actual message
         self._message = None  # Should be the containing block
+        self._number_of_blocks = 0
 
     def __repr__(self):
         return f'Block: {self._id} from Message: {self.message.id}'
 
     def __str__(self):
         return 'Subject:{message_id: %s, block_id: %s} %s',(self.message.id,self._id,self.text)
+
+    @property
+    def number(self):
+        """
+        This is the property exposing the number of blocks of this message
+        :return: int
+        """
+        return self._number_of_blocks
 
     @property
     def text(self):
