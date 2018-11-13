@@ -8,7 +8,8 @@ from .message import Message
 from .block import Block
 from .utils import cut
 
-class Broker(Connectible, Communicatable):
+
+class Broker(Communicatable):
     def __init__(self, addr):
         """
         This class represents the message transfer agent type.
@@ -16,7 +17,7 @@ class Broker(Connectible, Communicatable):
         self.messages = {}  # blocks
         self.queue = []  # Block queue
 
-        super().__init__(addr)
+        super().__init__()
 
     def __str__(self):
         queue = '*' * 25 + ' Queue ' + '*' * 25 + '\n' + f'{self.queue}' + '\n'
