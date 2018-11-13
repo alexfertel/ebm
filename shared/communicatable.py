@@ -1,7 +1,8 @@
 from .message import Message
 from .block import Block
-from imbox import Imbox
 from .user import User
+from imbox import Imbox
+from email.message import EmailMessage
 
 import json
 
@@ -18,6 +19,7 @@ class Communicatable:
         - Make the subject a json
         - Notiifying the consumer app of the result.
         :param address: email address
+        :param user: User
         :param subject: str
         :param body: str
         :return: bool
@@ -25,13 +27,17 @@ class Communicatable:
         smtp: smtplib.SMTP = smtplib.SMTP(addr)  # smtp instance
         smtp.set_debuglevel(1)
 
-        message = Message()
+        json_subject = json.dumps(subject, separators=(',', ':'))  # Make it a json for ease of parsing
 
-        json_subject = json.dumps(subject, separators=(',', ':'))
+        msg = EmailMessage()
 
-        # TODO: Should finish building the message here
+        msg['From'] = f'{user.username}@{user.active_email}'
+        msg['To'] = address
+        msg['Subject'] = json_subject
 
-        smtp.send_message()
+        msg.set_content(body)
+
+        smtp.send_message(msg)
 
         smtp.quit()
 

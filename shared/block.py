@@ -56,6 +56,10 @@ class Block:
     def generate_block_id(message):
         return message.id + 'B' + str(len(message))
 
+    @staticmethod
+    def block_from_imbox_msg(message):
+        pass
+
 
 def test():
     from message import Message

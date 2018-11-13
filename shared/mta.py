@@ -52,7 +52,8 @@ class Broker(Communicatable):
             # Should start with the synchronization of the imap server,
             # fetching new emails. I think this is of the upmost importance,
             # because new emails could mean errors or p2p messages.
-            self.recv()  # Enqueue the blocks here or do something like:
+            imbox: list[Block] = list(map(lambda x: Block.block_from_imbox_msg(x), self.recv()))
+            # Enqueue the blocks here or do something like:
             # next_batch = self.recv()
             # for block in next_batch:
             #     self.process(block)
@@ -88,7 +89,7 @@ class Broker(Communicatable):
         sort(items, key=lambda x: x.index)
         return ''.join(map(lambda x: x.text, items))
 
-    def send(self, address: list, subject: str, body: str):
+    def send_message(self, address: list, subject: str, body: str):
 
         blocks = cut(body, max_length)
 
