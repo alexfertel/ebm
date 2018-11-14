@@ -2,6 +2,7 @@
 import logging
 from message import Message
 import json
+import time
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('MESSAGE')
@@ -32,7 +33,9 @@ class Block:
         This is the property exposing the index of this block in its message
         :return: int
         """
-        return int(self.id.split('B')[1])
+        #TODO: tener en cuenta q esto no identifica bien a un bloque, pq dos bloques 
+        # pueden teer el mismo len
+        return int(self._id.split('B')[1].split('T')[1])
 
     @property
     def text(self):
@@ -56,14 +59,14 @@ class Block:
 
     @staticmethod
     def generate_block_id(message):
-        return message.id + 'B' + str(len(message))
+        return message.id + 'B' + str(len(message)) + 'T' + str(int(time.time() * 10000000))
 
     @staticmethod
     def block_from_imbox_msg(raw_message):
-        # TODO: ver si este es en realidad el nombre de la propiedad
+        # TODO: ver si (subject, body) es en realidad el nombre de la propiedad
         # TODO: no me queda claro como sabemos el orden de los bloques
         info = json.loads(raw_message.subject)
-        return Block(info['id_message'] , raw_message.body)
+        return Block(info['block_id'] , raw_message.body)
 
 
 

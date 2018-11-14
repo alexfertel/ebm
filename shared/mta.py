@@ -7,7 +7,7 @@ import email
 from .message import Message
 from .block import Block
 from .utils import cut
-
+from user import User
 
 class Broker(Communicatable):
     def __init__(self, addr):
@@ -26,9 +26,20 @@ class Broker(Communicatable):
 
     def enqueue(self, block):
         self.queue.append(block)
+    
+    def enqueue_list(blocks: list):
+        self.queue.extend(blocks)
 
     def dequeue(self):
         return self.queue.pop(0)
+
+    def fetch_in(self):
+        while True:
+            imbox = list(map(lambda x: Block.block_from_imbox_msg(x), self.recv()))
+                # Enqueue the blocks here or do something like:
+            self.enqueue_list(imbox)
+            
+        
 
     def process(self):
         # The broker received another block, so lets process it and see if it is part of the current message.
@@ -52,12 +63,7 @@ class Broker(Communicatable):
             # Should start with the synchronization of the imap server,
             # fetching new emails. I think this is of the upmost importance,
             # because new emails could mean errors or p2p messages.
-            imbox: list[Block] = list(map(lambda x: Block.block_from_imbox_msg(x), self.recv()))
-            # Enqueue the blocks here or do something like:
-            # next_batch = self.recv()
-            # for block in next_batch:
-            #     self.process(block)
-
+            
             # Process the next item in the queue, the goal should be
             # an item per iteration
             self.process()
@@ -69,9 +75,6 @@ class Broker(Communicatable):
 
             # TODO: There is not much more, right?
 
-            # From Sandor aqui ver donde es que se reciben los correos para parsearlos y convertirlos en bloques,
-            # y asi poder agregar la cantidad de bloques que tiene el msg.
-
             block = self.dequeue()
             if self.block.message in self.messages:
                 self.message[block.message].push(block)
@@ -80,6 +83,8 @@ class Broker(Communicatable):
 
             if len(self.message[block.message]) == block._number_of_blocks:
                 completed_message = merge(self.message[block.message])
+                # TODO: este message, hay que empezar a usarlo, pero no se esta teniendo en 
+                # cuenta el orden que debe tener con respecto al resto de msg
 
     @staticmethod
     def merge(items: list[Blocks]):
@@ -89,8 +94,13 @@ class Broker(Communicatable):
         sort(items, key=lambda x: x.index)
         return ''.join(map(lambda x: x.text, items))
 
-    def send_message(self, address: list, subject: str, body: str):
-
+    def send_message(self, address: list, subject: dict, body: str):
+        """
+            subject = {
+                'message_id': msg.id,
+                'block_id': block.index
+            }
+        """
         blocks = cut(body, max_length)
 
         msg = Message()
@@ -101,6 +111,16 @@ class Broker(Communicatable):
         for block in msg.blocks():
             # tener en cuenta que este metodo retorna un diccionario con los correos q no se pudieron enviar,
             # tambien retorna el error que ocurrio.
-            self.smtp.send_message(block.__str__() + '##NumberOfBlocks##' + str(len(blocks)),
-                                   from_addr='myemail@test.com', to_addrs=address)
+            #TODO: esto no hay q quitarlo?? ya se tiene el send de comunicatable
+            # self.smtp.send_message(str(block) + '##NumberOfBlocks##' + str(len(blocks)),
+            #                        from_addr='myemail@test.com', to_addrs=address)
+            
+            user = User('id','myemail@test.com','usr','passw')
+            subject = {
+                'message_id': msg.id,
+                'block_id': block.index
+            }
+
+            for addr in address:
+                self.send(addr, user, subject, str(block))
 
