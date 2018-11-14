@@ -9,17 +9,18 @@ logger = logging.getLogger('MESSAGE')
 
 
 class Block:
-    def __init__(self, identifier, text: str):
+    def __init__(self, identifier, text: str, number_of_blocks = 0):
         """
         This class represents the structure of an EBM message.
         :param identifier: int | string
         :param text: str
+        :param number_of_blocks: int
         """
         self._id = identifier  # Must be unique, should represent the place(index) in the block
         self._text = text  # The part of the body that this block carries
         # self._message = message  # Reference to the actual message
         self._message = None  # Should be the containing block
-        self._number_of_blocks = 0
+        self._number_of_blocks = number_of_blocks
 
     def __repr__(self):
         return f'Block: {self._id} from Message: {self.message.id}'
@@ -66,7 +67,8 @@ class Block:
         # TODO: ver si (subject, body) es en realidad el nombre de la propiedad
         # TODO: no me queda claro como sabemos el orden de los bloques
         info = json.loads(raw_message.subject)
-        return Block(info['block_id'] , raw_message.body)
+        body,number_blocks = raw_message.body.split('##NumberOfBlocks##')
+        return Block(info['block_id'] ,body, int(number_blocks[1]))
 
 
 

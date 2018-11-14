@@ -8,6 +8,10 @@ from .message import Message
 from .block import Block
 from .utils import cut
 from user import User
+import asyncio
+import time
+from threading import Thread
+
 
 class Broker(Communicatable):
     def __init__(self, addr):
@@ -18,6 +22,10 @@ class Broker(Communicatable):
         self.queue = []  # Block queue
 
         super().__init__()
+        
+        self.th = Thread(target = self.fetch_in, args=(self,))
+        self.th.start()
+
 
     def __str__(self):
         queue = '*' * 25 + ' Queue ' + '*' * 25 + '\n' + f'{self.queue}' + '\n'
@@ -36,8 +44,8 @@ class Broker(Communicatable):
     def fetch_in(self):
         while True:
             imbox = list(map(lambda x: Block.block_from_imbox_msg(x), self.recv()))
-                # Enqueue the blocks here or do something like:
             self.enqueue_list(imbox)
+            time.sleep(1)
             
         
 
@@ -45,7 +53,6 @@ class Broker(Communicatable):
         # The broker received another block, so lets process it and see if it is part of the current message.
         # The client should have used generate_block_id to create the identifier and it should come in the
         # email Subject. Parse the email and get the Subject.
-        block = self.dequeue()
 
         # Parse the subject and get the identifier
         # identifier = 'None or some identifier should be here after parsing'
@@ -55,6 +62,7 @@ class Broker(Communicatable):
         # Message.match_block_with_message(incoming_block, self.messages)
 
         # TODO: Keep going! :)
+        pass
 
     def loop(self):
         while True:
@@ -66,7 +74,6 @@ class Broker(Communicatable):
             
             # Process the next item in the queue, the goal should be
             # an item per iteration
-            self.process()
 
             # TODO: Maybe check the status of the replicated servers if this is a server?
             # TODO: Replicate if needed.
@@ -75,16 +82,17 @@ class Broker(Communicatable):
 
             # TODO: There is not much more, right?
 
-            block = self.dequeue()
-            if self.block.message in self.messages:
-                self.message[block.message].push(block)
-            else:
-                self.message[block.message] = [block]
+            if len(self.queue) > 0:
+                block = self.dequeue()
+                if self.block.message in self.messages:
+                    self.message[block.message].push(block)
+                else:
+                    self.message[block.message] = [block]
 
-            if len(self.message[block.message]) == block._number_of_blocks:
-                completed_message = merge(self.message[block.message])
-                # TODO: este message, hay que empezar a usarlo, pero no se esta teniendo en 
-                # cuenta el orden que debe tener con respecto al resto de msg
+                if len(self.message[block.message]) == block._number_of_blocks:
+                    completed_message = merge(self.message[block.message])
+                    # TODO: este message, hay que empezar a usarlo, pero no se esta teniendo en 
+                    # cuenta el orden que debe tener con respecto al resto de msg
 
     @staticmethod
     def merge(items: list[Blocks]):
@@ -111,9 +119,7 @@ class Broker(Communicatable):
         for block in msg.blocks():
             # tener en cuenta que este metodo retorna un diccionario con los correos q no se pudieron enviar,
             # tambien retorna el error que ocurrio.
-            #TODO: esto no hay q quitarlo?? ya se tiene el send de comunicatable
-            # self.smtp.send_message(str(block) + '##NumberOfBlocks##' + str(len(blocks)),
-            #                        from_addr='myemail@test.com', to_addrs=address)
+            
             
             user = User('id','myemail@test.com','usr','passw')
             subject = {
@@ -122,5 +128,5 @@ class Broker(Communicatable):
             }
 
             for addr in address:
-                self.send(addr, user, subject, str(block))
+                self.send(addr, user, subject, str(block)++ '##NumberOfBlocks##' + str(len(blocks))
 
