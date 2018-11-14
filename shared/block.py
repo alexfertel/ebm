@@ -1,5 +1,7 @@
 # This file retains the structure of _blocks in order to handle them.
 import logging
+from message import Message
+import json
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('MESSAGE')
@@ -57,8 +59,12 @@ class Block:
         return message.id + 'B' + str(len(message))
 
     @staticmethod
-    def block_from_imbox_msg(message):
-        pass
+    def block_from_imbox_msg(raw_message):
+        # TODO: ver si este es en realidad el nombre de la propiedad
+        # TODO: no me queda claro como sabemos el orden de los bloques
+        info = json.loads(raw_message.subject)
+        return Block(info['id_message'] , raw_message.body)
+
 
 
 def test():
