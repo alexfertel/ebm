@@ -12,4 +12,4 @@ RUN apt-get update && apt-get upgrade -y && apt-get install vim -y && python3 /t
 WORKDIR /usr/ebm
 
 COPY ./s .
-COPY ./shared .
+COPY src .

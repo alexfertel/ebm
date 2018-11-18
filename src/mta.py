@@ -4,12 +4,11 @@
 # a block? Blocks should have ids, and we should keep a dict holding
 # currently known message blocks while they're alive.
 import email
+import utils
+import time
 from .message import Message
 from .block import Block
-from .utils import cut
 from user import User
-import asyncio
-import time
 from threading import Thread
 
 
@@ -18,36 +17,41 @@ class Broker(Communicatable):
         """
         This class represents the message transfer agent type.
         """
+        super().__init__()
+
         self.messages = {}  # blocks
         self.queue = []  # Block queue
 
-        super().__init__()
-        
-        self.th = Thread(target = self.fetch_in, args=(self,))
+        self.th = Thread(target=self.fetch, args=(self,))
         self.th.start()
-
 
     def __str__(self):
         queue = '*' * 25 + ' Queue ' + '*' * 25 + '\n' + f'{self.queue}' + '\n'
-        messages = '*' * 25 + ' Queue ' + '*' * 25 + '\n' + f'{self.messages}' + '\n'
+        messages = '*' * 25 + ' Messages ' + '*' * 25 + '\n' + f'{self.messages}' + '\n'
         return queue + messages
 
-    def enqueue(self, block):
-        self.queue.append(block)
-    
-    def enqueue_list(blocks: list):
-        self.queue.extend(blocks)
+    def enqueue(self, block=None, *blocks):
+        """
+        Enqueues the block or the *blocks into the broker's queue.
+        :param block: Block
+        :return: None
+        """
+        if block:
+            self.queue.append(block)
+        self.queue.extend(*blocks)
 
-    def dequeue(self):
+    def dequeue(self) -> Block:
+        """
+        Dequeues the first block from the broker's queue.
+        :return: Block
+        """
         return self.queue.pop(0)
 
-    def fetch_in(self):
+    def fetch(self):
         while True:
             imbox = list(map(lambda x: Block.block_from_imbox_msg(x), self.recv()))
-            self.enqueue_list(imbox)
+            self.enqueue(imbox)
             time.sleep(1)
-            
-        
 
     def process(self):
         # The broker received another block, so lets process it and see if it is part of the current message.
@@ -71,7 +75,7 @@ class Broker(Communicatable):
             # Should start with the synchronization of the imap server,
             # fetching new emails. I think this is of the upmost importance,
             # because new emails could mean errors or p2p messages.
-            
+
             # Process the next item in the queue, the goal should be
             # an item per iteration
 
@@ -95,38 +99,12 @@ class Broker(Communicatable):
                     # cuenta el orden que debe tener con respecto al resto de msg
 
     @staticmethod
-    def merge(items: list[Blocks]):
+    def merge(items: list[Block]) -> str:
         """
         Merge all blocks of the same message
+        :param items: list[Block]
+        :return: str
         """
         sort(items, key=lambda x: x.index)
         return ''.join(map(lambda x: x.text, items))
-
-    def send_message(self, address: list, subject: dict, body: str):
-        """
-            subject = {
-                'message_id': msg.id,
-                'block_id': block.index
-            }
-        """
-        blocks = cut(body, max_length)
-
-        msg = Message()
-
-        for item in blocks:
-            msg.add(item)
-
-        for block in msg.blocks():
-            # tener en cuenta que este metodo retorna un diccionario con los correos q no se pudieron enviar,
-            # tambien retorna el error que ocurrio.
-            
-            
-            user = User('id','myemail@test.com','usr','passw')
-            subject = {
-                'message_id': msg.id,
-                'block_id': block.index
-            }
-
-            for addr in address:
-                self.send(addr, user, subject, str(block)++ '##NumberOfBlocks##' + str(len(blocks))
 

@@ -1,7 +1,8 @@
 # Client library to export and use by clients
-from shared.communicatable import Communicatable
-from shared.connectible import Connectible
-from shared.mta import Broker
+from .communicatable import Communicatable
+from .connectible import Connectible
+from .mta import Broker
+from .message import Message
 
 import smtplib
 import imapclient
@@ -20,12 +21,13 @@ class EBMC:
 
     # returns an ID
     def register(self, email, password):
-        subject = {
+        msg = Message()
+        msg.set_subject({
             topic: 'REGISTER',
             protocol: 3
-        }
-
-        self.mta.send(self.server_addr, subject, '')
+        })
+        msg.send(self.mta, [self.server_addr], '')
+        # self.mta.send(self.server_addr, subject, '')
 
     def login(self, email, password):
         subject = {
