@@ -1,29 +1,24 @@
-# This file retains the structure of _blocks in order to handle them.
 import logging
-from message import Message
 import json
-import time
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('BLOCK')
 
 
 class Block:
-    def __init__(self, identifier, text: str):
+    """
+    This class represents the structure of a block.
+    """
+    def __init__(self, identifier, subject: dict=None, text: str=None):
         # No entendi esto:
         # def __init__(self, identifier, text: str, number_of_blocks=0):
-        """
-        This class represents the structure of an EBM message.
-        :param identifier: int | string
-        :param text: str
-        :param number_of_blocks: int
-        """
         self._id = identifier  # Must be unique, should represent the place(index) in the block
-        self._text = text  # The part of the body that this block carries
+        self._text = text if text else ''  # The part of the body that this block carries
         # self._message = message  # Reference to the actual message
         self._message = None  # Should be the containing message
         # No entendi esto:
         # self._number_of_blocks = number_of_blocks
+        self._subject = subject if subject else {}
 
     def __repr__(self):
         return f'Block: {self._id} from Message: {self.message.id}' + '\n' \
@@ -74,7 +69,7 @@ class Block:
 
 
 def test():
-    from message import Message
+    from .message import Message
     m = Message()
 
     m.add('Hola!!')

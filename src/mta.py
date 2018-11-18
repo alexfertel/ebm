@@ -3,16 +3,18 @@
 # So, how do you know that a block is part of a message? how do you identify
 # a block? Blocks should have ids, and we should keep a dict holding
 # currently known message blocks while they're alive.
-import email
-import utils
+import smtplib
+import ssl
 import time
-from .message import Message
+
 from .block import Block
-from user import User
+from .user import User
 from threading import Thread
+from imbox import Imbox
+from email.message import EmailMessage
 
 
-class Broker(Communicatable):
+class Broker:
     def __init__(self, addr):
         """
         This class represents the message transfer agent type.
@@ -94,7 +96,7 @@ class Broker(Communicatable):
                     self.message[block.message] = [block]
 
                 if len(self.message[block.message]) == block._number_of_blocks:
-                    completed_message = merge(self.message[block.message])
+                    completed_message = Broker.merge(self.message[block.message])
                     # TODO: este message, hay que empezar a usarlo, pero no se esta teniendo en 
                     # cuenta el orden que debe tener con respecto al resto de msg
 
@@ -105,6 +107,54 @@ class Broker(Communicatable):
         :param items: list[Block]
         :return: str
         """
-        sort(items, key=lambda x: x.index)
+        items.sort(key=lambda x: x.index)
         return ''.join(map(lambda x: x.text, items))
+
+    def send(self, msg: EmailMessage):
+        """
+        This method contains the logic for sending an email, which comprises of:
+        - Connect to the smtp server
+        - Checking the length of the message.
+        - Splitting it accordingly in case of being to large.
+        - Building the blocks and _blocks identifiers.
+        - Building correctly the emails according to the email library
+        - Make the subject a json
+        - Notiifying the consumer app of the result.
+        :param msg: Block
+        :return: bool
+        """
+        smtp: smtplib.SMTP = smtplib.SMTP(addr)  # smtp instance
+        smtp.set_debuglevel(1)
+        smtp.send_message(msg)
+        smtp.quit()
+
+    def recv(self, addr, user: User):
+        """
+        This method contains the logic for fetching the next batch of messages
+        from the imap server.
+        :return: list[Block]
+        """
+
+        # if through_ssl:
+        ssl_context = ssl.create_default_context()
+
+        ssl_context.check_hostname = False
+
+        ssl_context.verify_mode = ssl.CERT_NONE
+
+        #     self.imap = imapclient.IMAPClient(addr, ssl_context=ssl_context)
+        # else:
+        #     self.imap = imapclient.IMAPClient(addr)
+
+        unread = []
+        with Imbox(addr,
+                   username=user.username,
+                   password=user.password,
+                   ssl=True,
+                   ssl_context=ssl_context,
+                   starttls=False) as imbox:
+            for _, message in imbox.messages(unread=True):
+                unread.append(message)  # For now just append to the queue
+
+        return unread
 

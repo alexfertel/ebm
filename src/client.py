@@ -21,21 +21,26 @@ class EBMC:
 
     # returns an ID
     def register(self, email, password):
-        msg = Message()
-        msg.set_subject({
-            topic: 'REGISTER',
-            protocol: 3
-        })
-        msg.send(self.mta, [self.server_addr], '')
-        # self.mta.send(self.server_addr, subject, '')
+        msg = Message(
+            body=f'{email}\n{password}',
+            subject={
+                topic: 'REGISTER',
+                protocol: 3
+            })
+
+        msg.send(self.mta, [self.server_addr])
+        # self.mta.send(f'ebm@{self.server_addr}', msg)
 
     def login(self, email, password):
-        subject = {
-            topic: 'LOGIN',
-            protocol: 3
-        }
+        msg = Message(
+            body=f'{email}\n{password}',
+            subject={
+                topic: 'LOGIN',
+                protocol: 3
+            })
 
-        self.mta.send(self.server_addr, subject, '')
+        msg.send(self.mta, [self.server_addr])
+        # self.mta.send(f'ebm@{self.server_addr}', subject, '')
 
     def add_email(self, email):
         pass
