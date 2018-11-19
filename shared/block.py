@@ -9,7 +9,7 @@ logger = logging.getLogger('MESSAGE')
 
 
 class Block:
-    def __init__(self, identifier, text: str, number_of_blocks = 0):
+    def __init__(self, identifier, text: str, id_message, type_message, number_of_blocks = 0 ):
         """
         This class represents the structure of an EBM message.
         :param identifier: int | string
@@ -19,8 +19,9 @@ class Block:
         self._id = identifier  # Must be unique, should represent the place(index) in the block
         self._text = text  # The part of the body that this block carries
         # self._message = message  # Reference to the actual message
-        self._message = None  # Should be the containing block
+        self._message = id_message  # Should be the containing block
         self._number_of_blocks = number_of_blocks
+        self._type_message = type_message
 
     def __repr__(self):
         return f'Block: {self._id} from Message: {self.message.id}'
@@ -48,15 +49,25 @@ class Block:
         This is the property exposing the containing block of this message or -1 in case of not knowing
         :return: int
         """
-        return self._message if self._message else -1
+        return self._message
 
-    def set_message(self, value):
-        """
-        This is a wrapper of the setter of the containing message of this block
-        :param value: Message
-        :return: None
-        """
-        self._message = value
+    @property
+    def type_message(self):
+        return self._type_message
+
+    @property
+    def number_of_blocks(self):
+        return self._number_of_blocks
+
+    @property
+    def subject(self):
+        return {
+                'message_id': self.message,
+                'block_id': self._id,
+                'type': self.type_message,
+                'number_of_blocks': self._number_of_blocks
+            }
+
 
     @staticmethod
     def generate_block_id(message):
@@ -67,8 +78,8 @@ class Block:
         # TODO: ver si (subject, body) es en realidad el nombre de la propiedad
         # TODO: no me queda claro como sabemos el orden de los bloques
         info = json.loads(raw_message.subject)
-        body,number_blocks = raw_message.body.split('##NumberOfBlocks##')
-        return Block(info['block_id'] ,body, int(number_blocks[1]))
+        
+        return Block(info['block_id'], raw_message.body, info['number_of_blocks'])
 
 
 

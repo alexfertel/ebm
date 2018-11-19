@@ -3,13 +3,21 @@ import time
 import copy
 from block import Block
 import email
+from utils import cut
+from config import MESSAGE_LENGTH
 
 
 class Message:
-    def __init__(self, _type = 1):
+    def __init__(self, data, _type = 1):
         self._id = Message.generate_message_id()
         self._blocks = []
         self._type = _type
+
+        blocks = cut(data, MESSAGE_LENGTH)
+        self._number_of_blocks = len(blocks)
+
+        for block in blocks:
+            self.add(block)
 
     def __len__(self):
         return len(self._blocks)
@@ -43,7 +51,6 @@ class Message:
         pass
 
     def add(self, block_text):
-        block = Block(Block.generate_block_id(self), block_text)
-        block.set_message(self)
+        block = Block(Block.generate_block_id(self), block_text, self.id, self.type, self._number_of_blocks )
 
         self._blocks.append(block)

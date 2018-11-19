@@ -88,7 +88,7 @@ class Broker(Communicatable):
                 else:
                     self.message[block.message] = [block]
 
-                if len(self.message[block.message]) == block._number_of_blocks:
+                if len(self.message[block.message]) == block.number_of_blocks:
                     completed_message = merge(self.message[block.message])
                     # TODO: este message, hay que empezar a usarlo, pero no se esta teniendo en 
                     # cuenta el orden que debe tener con respecto al resto de msg
@@ -101,28 +101,14 @@ class Broker(Communicatable):
         sort(items, key=lambda x: x.index)
         return ''.join(map(lambda x: x.text, items))
 
-    def send_message(self, address: list, subject: dict, body: str):
-        """
-            subject = {
-                'message_id': msg.id,
-                'block_id': block.index
-            }
-        """
-        blocks = cut(body, max_length)
+    def send_message(self, address: list, body: str, _type=1):
+        
 
-        msg = Message()
-
-        for item in blocks:
-            msg.add(item)
+        msg = Message(body, _type)
 
         for block in msg.blocks():
             user = User('id','myemail@test.com','usr','passw')
-            subject = {
-                'message_id': msg.id,
-                'block_id': block.index,
-                'type': msg.type
-            }
-
+            
             for addr in address:
-                self.send(addr, user, subject, str(block)++ '##NumberOfBlocks##' + str(len(blocks))
+                self.send(addr, user, block.subject, str(block))
 
