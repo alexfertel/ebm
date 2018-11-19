@@ -97,9 +97,17 @@ class Broker(Communicatable):
     def merge(items: list[Blocks]):
         """
         Merge all blocks of the same message
+        :param items: list[Blocks]
+        :return dict: {
+                        'data',
+                        'type'
+                    } 
         """
         sort(items, key=lambda x: x.index)
-        return ''.join(map(lambda x: x.text, items))
+        return { 
+            'data':''.join(map(lambda x: x.text, items)),
+            'type': items[0].type_message
+        }
 
     def send_message(self, address: list, body: str, _type=1):
         
