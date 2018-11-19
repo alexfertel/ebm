@@ -1,0 +1,83 @@
+import logging
+import json
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('BLOCK')
+
+
+class Block:
+    """
+    This class represents the structure of a block.
+    """
+    def __init__(self, identifier, subject: dict=None, text: str=None):
+        self._id = identifier  # Must be unique, should represent the place(index) in the block
+        self._text = text if text else ''  # The part of the body that this block carries
+        self._message = None  # Should be the containing message
+        self._subject = subject if subject else {}
+
+    def __repr__(self):
+        return f'Block: {self._id} from Message: {self.message.id}' + '\n' \
+               + f'Subject:{{\n\t{self.message.id},\n\t{self.id},\n\t{self.text}\n}}'
+
+    def set_message(self, msg):
+        self._message = msg
+
+    @property
+    def index(self):
+        """
+        This is the property exposing the index of this block in its message
+        :return: int
+        """
+        return int(self._id.split('B')[1])
+        # return int(self._id.split('B')[1].split('T')[1])
+
+    @property
+    def text(self):
+        return self._text
+
+    @property
+    def id(self):
+        return self._id
+
+    @property
+    def message(self):
+        """
+        This is the property exposing the containing block of this message or -1 in case of not knowing
+        :return: int
+        """
+        return self._message
+
+    @property
+    def subject(self):
+        return {
+                'message_id': self.message,
+                'block_id': self._id
+            }
+
+    @staticmethod
+    def generate_block_id(message):
+        # Me parece que ya vimos esto y nos dimos cuenta de que no tenia problema
+        return message.id + 'B' + str(len(message))  # + 'T' + str(int(time.time() * 10000000))
+        # return message.id + 'B' + str(len(message)) + 'T' + str(int(time.time() * 10000000))
+
+    @staticmethod
+    def block_from_imbox_msg(raw_message):
+        # TODO: ver si (subject, body) es en realidad el nombre de la propiedad
+        # TODO: no me queda claro como sabemos el orden de los bloques
+        info = json.loads(raw_message.subject)
+        return Block(info['block_id'], raw_message.body, info['number_of_blocks'])
+
+
+def test():
+    from .message import Message
+    m = Message()
+
+    m.add('Hola!!')
+
+    logger.info(m)
+    logger.info(m.blocks[0])
+    logger.info(m.blocks[0].text)
+
+
+if __name__ == '__main__':
+    test()
