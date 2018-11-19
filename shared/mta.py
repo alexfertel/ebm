@@ -6,9 +6,8 @@
 import email
 from .message import Message
 from .block import Block
-from .utils import cut
+from .utils import *
 from user import User
-import asyncio
 import time
 from threading import Thread
 
@@ -35,7 +34,7 @@ class Broker(Communicatable):
     def enqueue(self, block):
         self.queue.append(block)
     
-    def enqueue_list(blocks: list):
+    def enqueue_list(self, blocks: list):
         self.queue.extend(blocks)
 
     def dequeue(self):
@@ -117,14 +116,11 @@ class Broker(Communicatable):
             msg.add(item)
 
         for block in msg.blocks():
-            # tener en cuenta que este metodo retorna un diccionario con los correos q no se pudieron enviar,
-            # tambien retorna el error que ocurrio.
-            
-            
             user = User('id','myemail@test.com','usr','passw')
             subject = {
                 'message_id': msg.id,
-                'block_id': block.index
+                'block_id': block.index,
+                'type': msg.type
             }
 
             for addr in address:

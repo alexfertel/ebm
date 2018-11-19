@@ -6,15 +6,20 @@ import email
 
 
 class Message:
-    def __init__(self):
+    def __init__(self, _type = 1):
         self._id = Message.generate_message_id()
         self._blocks = []
+        self._type = _type
 
     def __len__(self):
         return len(self._blocks)
 
     def __str__(self):
         return f'Message\nID: {self._id}\nBlocks: {self._blocks}'
+
+    @property
+    def type(self):
+        return self._type
 
     @property
     def id(self):
