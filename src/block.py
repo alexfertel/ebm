@@ -10,19 +10,17 @@ class Block:
     This class represents the structure of a block.
     """
     def __init__(self, identifier, subject: dict=None, text: str=None):
-        # No entendi esto:
-        # def __init__(self, identifier, text: str, number_of_blocks=0):
         self._id = identifier  # Must be unique, should represent the place(index) in the block
         self._text = text if text else ''  # The part of the body that this block carries
-        # self._message = message  # Reference to the actual message
         self._message = None  # Should be the containing message
-        # No entendi esto:
-        # self._number_of_blocks = number_of_blocks
         self._subject = subject if subject else {}
 
     def __repr__(self):
         return f'Block: {self._id} from Message: {self.message.id}' + '\n' \
                + f'Subject:{{\n\t{self.message.id},\n\t{self.id},\n\t{self.text}\n}}'
+
+    def set_message(self, msg):
+        self._message = msg
 
     @property
     def index(self):
@@ -38,20 +36,23 @@ class Block:
         return self._text
 
     @property
+    def id(self):
+        return self._id
+
+    @property
     def message(self):
         """
         This is the property exposing the containing block of this message or -1 in case of not knowing
         :return: int
         """
-        return self._message if self._message else -1
+        return self._message
 
-    def set_message(self, value):
-        """
-        This is a wrapper of the setter of the containing message of this block
-        :param value: Message
-        :return: None
-        """
-        self._message = value
+    @property
+    def subject(self):
+        return {
+                'message_id': self.message,
+                'block_id': self._id
+            }
 
     @staticmethod
     def generate_block_id(message):
@@ -64,8 +65,7 @@ class Block:
         # TODO: ver si (subject, body) es en realidad el nombre de la propiedad
         # TODO: no me queda claro como sabemos el orden de los bloques
         info = json.loads(raw_message.subject)
-        body, number_blocks = raw_message.body.split('##NumberOfBlocks##')
-        return Block(info['block_id'], body, int(number_blocks[1]))
+        return Block(info['block_id'], raw_message.body, info['number_of_blocks'])
 
 
 def test():

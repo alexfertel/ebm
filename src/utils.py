@@ -1,5 +1,7 @@
 from ..config import *
 
+SYS_MSG = 0
+DATA_MSG = 1
 
 def cut(body: str, size: int = message_length) -> list:
     length = len(body)

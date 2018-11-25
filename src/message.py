@@ -8,6 +8,7 @@ from .user import User
 from .mta import Broker
 from .utils import cut
 
+
 class Message:
     """
     This class is an email wrapper.

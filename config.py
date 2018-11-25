@@ -1,1 +1,1 @@
-message_length = 1e6
+MESSAGE_LENGTH = 1e6

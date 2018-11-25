@@ -21,6 +21,7 @@ class Broker:
         """
         super().__init__()
 
+        self.addr = addr
         self.messages = {}  # blocks
         self.queue = []  # Block queue
 
@@ -51,7 +52,7 @@ class Broker:
 
     def fetch(self):
         while True:
-            imbox = list(map(lambda x: Block.block_from_imbox_msg(x), self.recv()))
+            imbox = list(map(lambda x: Block.block_from_imbox_msg(x), self.recv(self.addr)))
             self.enqueue(imbox)
             time.sleep(1)
 
@@ -90,21 +91,22 @@ class Broker:
 
             if len(self.queue) > 0:
                 block = self.dequeue()
-                if self.block.message in self.messages:
-                    self.message[block.message].push(block)
+                if block.message in self.messages:
+                    self.messages[block.message].push(block)
                 else:
-                    self.message[block.message] = [block]
+                    self.messages[block.message] = [block]
 
-                if len(self.message[block.message]) == block._number_of_blocks:
-                    completed_message = Broker.merge(self.message[block.message])
-                    # TODO: este message, hay que empezar a usarlo, pero no se esta teniendo en 
+                if len(self.messages[block.message]) == len(list(filter(lambda x: x[0] == block.message,
+                                                                        self.messages.items()))[0][0]):
+                    complete_message = Broker.merge(self.messages[block.message])
+                    # TODO: este message, hay que empezar a usarlo, pero no se esta teniendo en
                     # cuenta el orden que debe tener con respecto al resto de msg
 
     @staticmethod
-    def merge(items: list[Block]) -> str:
+    def merge(items: list) -> str:
         """
         Merge all blocks of the same message
-        :param items: list[Block]
+        :param items: list
         :return: str
         """
         items.sort(key=lambda x: x.index)
@@ -123,12 +125,12 @@ class Broker:
         :param msg: Block
         :return: bool
         """
-        smtp: smtplib.SMTP = smtplib.SMTP(addr)  # smtp instance
+        smtp: smtplib.SMTP = smtplib.SMTP(self.addr)  # smtp instance
         smtp.set_debuglevel(1)
         smtp.send_message(msg)
         smtp.quit()
 
-    def recv(self, addr, user: User):
+    def recv(self, addr, user: User = User('id', 'myemail@test.com', 'usr', 'passw')):
         """
         This method contains the logic for fetching the next batch of messages
         from the imap server.
@@ -157,4 +159,3 @@ class Broker:
                 unread.append(message)  # For now just append to the queue
 
         return unread
-

@@ -1,7 +1,6 @@
 # Entry point and loop of the server
-from .communicatable import Communicatable
-from .connectible import Connectible
 from .mta import Broker
+from .user import User
 
 
 class EBMS:
