@@ -1,23 +1,45 @@
 import logging
 import json
 
+from email.message import EmailMessage
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('BLOCK')
 
 
-class Block:
+class Block(EmailMessage):
     """
     This class represents the structure of a block.
     """
-    def __init__(self, identifier, subject: dict=None, text: str=None):
+    def __init__(self,
+                 identifier,
+                 subject: dict = None,
+                 sent_from: str = None,
+                 sent_to: str = None,
+                 text: str = None):
+        super().__init__()
         self._id = identifier  # Must be unique, should represent the place(index) in the block
-        self._text = text if text else ''  # The part of the body that this block carries
+
+        if text:
+            self.set_content(text)  # The part of the body that this block carries
+
+        if subject:
+            self['Subject'] = json.dumps(subject, separators=(',', ':'))
+
+        if sent_from:
+            self['From'] = sent_from
+
+        if sent_to:
+            self['To'] = sent_to
+
         self._message = None  # Should be the containing message
-        self._subject = subject if subject else {}
 
     def __repr__(self):
-        return f'Block: {self._id} from Message: {self.message.id}' + '\n' \
-               + f'Subject:{{\n\t{self.message.id},\n\t{self.id},\n\t{self.text}\n}}'
+        return str(self)
+
+    def __str__(self):
+        return f'Block: {self._id} from Message: {self.message.id}' + '\n\t\t' \
+               + f'Subject:{self.subject}'
 
     def set_message(self, msg):
         self._message = msg
@@ -33,7 +55,7 @@ class Block:
 
     @property
     def text(self):
-        return self._text
+        return self.get_content()
 
     @property
     def id(self):
@@ -49,10 +71,19 @@ class Block:
 
     @property
     def subject(self):
-        return {
-                'message_id': self.message,
-                'block_id': self._id
-            }
+        return json.loads(self['Subject'])
+        # return {
+        #         'message_id': self.message,
+        #         'block_id': self._id
+        #     }
+
+    @property
+    def sent_from(self):
+        return self['From']
+
+    @property
+    def sent_to(self):
+        return self['To']
 
     @staticmethod
     def generate_block_id(message):
@@ -61,23 +92,32 @@ class Block:
         # return message.id + 'B' + str(len(message)) + 'T' + str(int(time.time() * 10000000))
 
     @staticmethod
-    def block_from_imbox_msg(raw_message):
-        # TODO: ver si (subject, body) es en realidad el nombre de la propiedad
-        # TODO: no me queda claro como sabemos el orden de los bloques
-        info = json.loads(raw_message.subject)
-        return Block(info['block_id'], raw_message.body, info['number_of_blocks'])
+    def block_from_imbox_msg(imbox_msg):
+        info = json.loads(imbox_msg.subject)
+
+        return Block(info['block_id'],
+                     info,
+                     imbox_msg.sent_from,
+                     imbox_msg.sent_to,
+                     imbox_msg.body.plain)
 
 
 def test():
-    from .message import Message
+    from message import Message
     m = Message()
 
     m.add('Hola!!')
+    m.add('Hi!!')
+    m.add('Bonjour!!')
 
     logger.info(m)
-    logger.info(m.blocks[0])
-    logger.info(m.blocks[0].text)
+    # logger.info(m.blocks)
+    # logger.info(m.blocks[0])
+    # logger.info(m.blocks[0].text)
 
 
 if __name__ == '__main__':
+    # __package__ = 'ebm.src'
+    # import sys
+    # sys.path.append('/home/alex/Desktop/Alex/Projects/ebm/src')
     test()

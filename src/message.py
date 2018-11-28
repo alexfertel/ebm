@@ -1,12 +1,16 @@
 import json
+import logging
 import time
 import copy
 import email
 
-from .block import Block
-from .user import User
-from .mta import Broker
-from .utils import cut
+from block import Block
+from user import User
+from mta import Broker
+from utils import cut
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('MESSAGE')
 
 
 class Message:
@@ -23,7 +27,13 @@ class Message:
         return len(self._blocks)
 
     def __repr__(self):
-        return f'Message\n\tID: {self._id}\n\tBlocks: {self._blocks}'
+        representation = f'\nMessage:\n\tID: {self._id}\n\tBlocks: [\n\t\t'
+
+        for block in self.blocks:
+            representation += str(block) + f'\n\t\t'
+
+        representation += f']'
+        return representation
 
     @property
     def id(self) -> str:
@@ -75,7 +85,7 @@ class Message:
         """
         pass
 
-    def set_subject(self, sbj=None, **kwargs):
+    def update_subject(self, sbj=None, **kwargs):
         """
         Subject setter.
         :param sbj: dict
@@ -93,12 +103,13 @@ class Message:
         """
         # Init a new Block with the text arg and a new id
         bid = Block.generate_block_id(self)
+        subjectcopy = copy.copy(self.subject)
+        subjectcopy.update({
+            'block_id': bid,
+            'message_id': self.id
+        })
         block = Block(bid,
-                      subject=self.subject.update(
-                          {
-                              'block_id': bid,
-                              'message_id': self.id
-                          }),
+                      subject=subjectcopy,
                       text=text)
 
         block.set_message(self)  # Set self as the message of the new Block
@@ -117,7 +128,7 @@ class Message:
 
     def send(self,
              broker: Broker,
-             addresses: list,
+             addr: str,
              user: User = User('id', 'myemail@test.com', 'usr', 'passw')):
         """
         This methods represents the process of sending this message,
@@ -126,11 +137,11 @@ class Message:
         subject = {
             'message_id': msg.id,
             'block_id': block.index,
-            topic: one of [ REGISTER, LOGIN, PUBLICATION, SUBCRIBE, P2P ],
-            protocol: one of [ 1, 2, 3 ] ( PUB/SUB, P2P, CONFIG )
+            'topic': one of [ REGISTER, LOGIN, PUBLICATION, SUBCRIBE, P2P ],
+            'protocol': one of [ 1, 2, 3 ] ( PUB/SUB, P2P, CONFIG )
         }
         :param broker: Broker
-        :param addresses: list
+        :param addr: str
         :param user: User
         :return: None
         """
@@ -141,14 +152,24 @@ class Message:
 
         # Enqueue each of the blocks of self as EmailMessage instances
         for block in self.blocks:
-            json_subject = json.dumps(block.subject, separators=(',', ':'))  # Make it a json for ease of parsing
+            block['Subject'] = json.dumps(block.subject, separators=(',', ':'))  # Make it a json for ease of parsing
+            block['From'] = f'{user.username}@{user.active_email}'
+            block['To'] = addr
+            broker.enqueue(block)
 
-            msg = email.message.EmailMessage()
-            msg['From'] = f'{user.username}@{user.active_email}'
-            msg['Subject'] = json_subject
-            msg.set_content(block.text)
+            # for addr in addresses:
+            # broker.send(addr, user, subject, str(block) + '##NumberOfBlocks##' + str(len(blocks)))
 
-            for addr in addresses:
-                msg['To'] = addr
-                broker.enqueue(msg)
-                # broker.send(addr, user, subject, str(block) + '##NumberOfBlocks##' + str(len(blocks)))
+
+def test():
+    m = Message()
+
+    m.add('Hola!!')
+    m.add('Hi!!')
+    m.add('Bonjour!!')
+
+    logger.info(m)
+
+
+if __name__ == '__main__':
+    test()

@@ -1,16 +1,14 @@
-from ..config import *
+import config
 
-SYS_MSG = 0
-DATA_MSG = 1
 
-def cut(body: str, size: int = message_length) -> list:
+def cut(body: str, size: int = config.MESSAGE_LENGTH) -> list:
     length = len(body)
     if size > length:
         val = ''
         result = []
         for i in range(length):
             if i % size == 0:
-                result.push(val)
+                result.append(val)
                 val = ''
             else:
                 val += body[i] if i != length else body[i]
