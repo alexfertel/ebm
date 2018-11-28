@@ -117,7 +117,7 @@ class Message:
 
     def send(self,
              broker: Broker,
-             addresses: list,
+             addr: str,
              user: User = User('id', 'myemail@test.com', 'usr', 'passw')):
         """
         This methods represents the process of sending this message,
@@ -126,11 +126,11 @@ class Message:
         subject = {
             'message_id': msg.id,
             'block_id': block.index,
-            topic: one of [ REGISTER, LOGIN, PUBLICATION, SUBCRIBE, P2P ],
-            protocol: one of [ 1, 2, 3 ] ( PUB/SUB, P2P, CONFIG )
+            'topic': one of [ REGISTER, LOGIN, PUBLICATION, SUBCRIBE, P2P ],
+            'protocol': one of [ 1, 2, 3 ] ( PUB/SUB, P2P, CONFIG )
         }
         :param broker: Broker
-        :param addresses: list
+        :param addr: str
         :param user: User
         :return: None
         """
@@ -141,14 +141,10 @@ class Message:
 
         # Enqueue each of the blocks of self as EmailMessage instances
         for block in self.blocks:
-            json_subject = json.dumps(block.subject, separators=(',', ':'))  # Make it a json for ease of parsing
+            block['Subject'] = json.dumps(block.subject, separators=(',', ':'))  # Make it a json for ease of parsing
+            block['From'] = f'{user.username}@{user.active_email}'
+            block['To'] = addr
+            broker.enqueue(block)
 
-            msg = email.message.EmailMessage()
-            msg['From'] = f'{user.username}@{user.active_email}'
-            msg['Subject'] = json_subject
-            msg.set_content(block.text)
-
-            for addr in addresses:
-                msg['To'] = addr
-                broker.enqueue(msg)
-                # broker.send(addr, user, subject, str(block) + '##NumberOfBlocks##' + str(len(blocks)))
+            # for addr in addresses:
+            # broker.send(addr, user, subject, str(block) + '##NumberOfBlocks##' + str(len(blocks)))
