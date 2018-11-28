@@ -7,8 +7,8 @@ import smtplib
 import ssl
 import time
 
-from .block import Block
-from .user import User
+from block import Block
+from user import User
 from threading import Thread
 from imbox import Imbox
 from email.message import EmailMessage
@@ -25,8 +25,7 @@ class Broker:
         self.messages = {}  # blocks
         self.queue = []  # Block queue
 
-        self.th = Thread(target=self.fetch, args=(self,))
-        self.th.start()
+        self.start_thread(self.fetch, (self,))
 
     def __str__(self):
         queue = '*' * 25 + ' Queue ' + '*' * 25 + '\n' + f'{self.queue}' + '\n'
@@ -50,6 +49,10 @@ class Broker:
         """
         return self.queue.pop(0)
 
+    def start_thread(self, target: function, args: tuple):
+        th = Thread(target=target, args=args)
+        th.start()
+
     def fetch(self):
         while True:
             imbox = list(map(lambda x: Block.block_from_imbox_msg(x), self.recv(self.addr)))
@@ -60,6 +63,7 @@ class Broker:
         # The broker received another block, so lets process it and see if it is part of the current message.
         # The client should have used generate_block_id to create the identifier and it should come in the
         # email Subject. Parse the email and get the Subject.
+        next_block = self.dequeue()
 
         # Parse the subject and get the identifier
         # identifier = 'None or some identifier should be here after parsing'
@@ -68,7 +72,19 @@ class Broker:
         # See what message it belongs to, insert it and check the message's lifetime
         # Message.match_block_with_message(incoming_block, self.messages)
 
-        # TODO: Keep going! :)
+        if len(self.queue) > 0:
+            block = self.dequeue()
+            if block.message in self.messages:
+                self.messages[block.message].push(block)
+            else:
+                self.messages[block.message] = [block]
+
+            if len(self.messages[block.message]) == len(list(filter(lambda x: x[0] == block.message,
+                                                                    self.messages.items()))[0][0]):
+                complete_message = Broker.merge(self.messages[block.message])
+                # TODO: este message, hay que empezar a usarlo, pero no se esta teniendo en
+                # cuenta el orden que debe tener con respecto al resto de msg
+
         pass
 
     def loop(self):
@@ -82,25 +98,12 @@ class Broker:
             # Process the next item in the queue, the goal should be
             # an item per iteration
 
-            # TODO: Maybe check the status of the replicated servers if this is a server?
+            # TODO: Check the status of the replicated servers.
             # TODO: Replicate if needed.
 
             # TODO: Multiple queues for the subscriptions and p2ps?
 
             # TODO: There is not much more, right?
-
-            if len(self.queue) > 0:
-                block = self.dequeue()
-                if block.message in self.messages:
-                    self.messages[block.message].push(block)
-                else:
-                    self.messages[block.message] = [block]
-
-                if len(self.messages[block.message]) == len(list(filter(lambda x: x[0] == block.message,
-                                                                        self.messages.items()))[0][0]):
-                    complete_message = Broker.merge(self.messages[block.message])
-                    # TODO: este message, hay que empezar a usarlo, pero no se esta teniendo en
-                    # cuenta el orden que debe tener con respecto al resto de msg
 
     @staticmethod
     def merge(items: list) -> str:

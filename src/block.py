@@ -1,12 +1,13 @@
-import email
 import logging
 import json
+
+from email.message import EmailMessage
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('BLOCK')
 
 
-class Block(email.message.EmailMessage):
+class Block(EmailMessage):
     """
     This class represents the structure of a block.
     """
@@ -34,7 +35,10 @@ class Block(email.message.EmailMessage):
         self._message = None  # Should be the containing message
 
     def __repr__(self):
-        return f'Block: {self._id} from Message: {self.message.id}' + '\n' \
+        return str(self)
+
+    def __str__(self):
+        return f'Block: {self._id} from Message: {self.message.id}' + '\n\t\t' \
                + f'Subject:{self.subject}'
 
     def set_message(self, msg):
@@ -99,15 +103,21 @@ class Block(email.message.EmailMessage):
 
 
 def test():
-    from .message import Message
+    from message import Message
     m = Message()
 
     m.add('Hola!!')
+    m.add('Hi!!')
+    m.add('Bonjour!!')
 
     logger.info(m)
-    logger.info(m.blocks[0])
-    logger.info(m.blocks[0].text)
+    # logger.info(m.blocks)
+    # logger.info(m.blocks[0])
+    # logger.info(m.blocks[0].text)
 
 
 if __name__ == '__main__':
+    # __package__ = 'ebm.src'
+    # import sys
+    # sys.path.append('/home/alex/Desktop/Alex/Projects/ebm/src')
     test()
