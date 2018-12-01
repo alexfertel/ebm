@@ -40,4 +40,5 @@ testem.log
 Thumbs.db
 build_dependencies
 */**/__pycache__
-*.pdf
+/sender-app/uploads
+/sender-app/static/recived

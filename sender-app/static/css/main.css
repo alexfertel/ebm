@@ -1,0 +1,12 @@
+body{
+    text-align: center;
+}
+.container{
+    margin-top: 10%
+}
+.sender{
+    display: unset;
+}
+.txt-c{
+    text-align: left;
+}

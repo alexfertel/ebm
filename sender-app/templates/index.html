@@ -6,16 +6,67 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Page Title</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" type="text/css" href="static/css/style.css" />
+    <link rel="stylesheet" type="text/css" href="static/css/bootstrap.min.css" />
+    <link rel="stylesheet" type="text/css" href="static/css/main.css" />
+    <script src="static/js/jquery.min.js"></script>
+    <script src="static/js/bootstrap.min.js"></script>
+
 
 </head>
 
 <body>
-    
-    <form action="/upload" method="post" enctype=multipart/form-data>
-        <input type="file" name="data" id="data">
-        <input type="submit" value="Send">
-    </form>
+    <nav class="navbar navbar-expand-sm bg-primary">
+        <a class="navbar-brand text-white" href="#">EBM</a>
+        <!-- Links -->
+        <ul class="navbar-nav">
+            <!-- <li class="nav-item">
+                <a class="nav-link" href="#">Link 1</a>
+            </li> -->
+        </ul>
+
+    </nav>
+    <div class="container">
+        <div>
+                <div class="row sender">
+                    <form action="/upload" method="post" enctype=multipart/form-data> 
+                        <div class="form-group">
+                            <input type="file" name="data" id="data">
+        
+                            <input type="submit" class="btn btn-success" value="Send">
+                        </div>
+        
+                    </form>
+        
+                </div>
+
+                <div class="row">
+                    <h3>Recived Files</h3>
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Date</th>
+                                <th>Size</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for file in files %}
+                                <tr>
+                                    <td class="txt-c"><a href="static/recived/{{file[0]}}">{{ file[0] }}</a></td>
+                                    <td>{{ file[1] }}</td>
+                                    <td>{{ file[2]|round(2) }} Mb</td>
+                                </tr>
+                            {% endfor %}
+                            
+                        </tbody>
+                    </table>
+                </div>
+        
+        </div>
+        
+
+    </div>
+
 </body>
 
 </html>
