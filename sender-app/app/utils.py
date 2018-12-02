@@ -11,3 +11,18 @@ def get_files():
          ) for file in files
         ]
     return file_info
+
+def send_file(file_location, target, type):
+    file = open(file_location)
+    size = os.path.getsize(file_location)
+    
+    # TODO: cambia 1000 por el tamanno maximo permitido
+    for target in range(int(size/1000)):
+        file.read(1000)
+        # TODO: mandar correro con esta info
+    if size%1000:
+        file.read(size%1000)
+        #mandar correro con esta info
+    file.close()
+    # TODO: buscar como borrar los archivos, ya que no es necsarios q 
+    # persistan en el cliente una vez q se mandaron

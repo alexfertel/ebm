@@ -29,8 +29,12 @@ def upload_file():
             return 'Please select one file'
         # if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
-        file.save(os.path.join(UPLOAD_FOLDER, filename))
         
+        file_location = os.path.join(UPLOAD_FOLDER, filename)
+        file.save(file_location)
+        
+        utils.send_file(file_location, request.form['target'], request.form['radio'])
+
         return redirect('/')
     return 'not ok'
 
@@ -57,3 +61,9 @@ def subscribe():
     # TODO: ver bien que retorna este metodo, si no hace nada, entonce se queda asi
     # hay q hacer un unsubscribe
     return redirect('/')
+
+@view.route('/create-event', methods=['POST'])
+def create_event():
+    # TODO: ver si implementar esto, 
+    return redirect('/')
+

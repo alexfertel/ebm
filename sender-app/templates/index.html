@@ -18,19 +18,19 @@
 
     <nav class="navbar navbar-inverse text-white bg-primary">
         <!-- <div class="container-fluid"> -->
-            <div class="navbar-header">
-                <a class="navbar-brand text-white" href="#">S-EBM</a>
-            </div>
-            <ul class="nav navbar-right">
-                <li><a class="text-white" data-toggle="modal" data-target="#eventSubs" >Subscribe</a></li>
-                <li><a class="text-white" data-toggle="modal" data-target="#myModal"><span class="glyphicon glyphicon-user"></span>Login</a></li>
-            </ul>
+        <div class="navbar-header">
+            <a class="navbar-brand text-white" href="#">S-MBM</a>
+        </div>
+        <ul class="nav navbar-right">
+            <li><a class="text-white" data-toggle="modal" data-target="#eventCreate">New Event</a></li>
+            <li><a class="text-white" data-toggle="modal" data-target="#eventSubs">Subscribe</a></li>
+            <li><a class="text-white" data-toggle="modal" data-target="#myModal"><span class="glyphicon glyphicon-user"></span>Login</a></li>
+        </ul>
         <!-- </div> -->
     </nav>
 
     {% if error %}
     <div class="alert alert-danger alert-dismissible">
-        <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a> 
         <strong>Danger!</strong> {{ error }}
     </div>
     {% endif %}
@@ -95,7 +95,7 @@
 
                 <!-- Modal Header -->
                 <div class="modal-header">
-                    <h4 class="modal-title">Sender Mail Based Middleware Login</h4>
+                    <h4 class="modal-title">Login</h4>
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
                 </div>
 
@@ -116,10 +116,10 @@
                     </div>
 
                 </div>
-                
+
                 <!-- Modal footer -->
                 <div class="modal-footer">
-                        <a href="/sing-up">Sing Up</a>
+                    <a href="/sing-up">Sing Up</a>
                     <!-- <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button> -->
                 </div>
 
@@ -128,37 +128,70 @@
     </div>
 
     <div class="modal fade" id="eventSubs">
-            <div class="modal-dialog">
-                <div class="modal-content">
-    
-                    <!-- Modal Header -->
-                    <div class="modal-header">
-                        <h4 class="modal-title">Sender Mail Based Middleware</h4>
-                        <button type="button" class="close" data-dismiss="modal">&times;</button>
-                    </div>
-    
-                    <!-- Modal body -->
-                    <div class="modal-body">
-                        <div class="container">
-                            <form action="/subscribe" method="post">
-                                <div class="form-group">
-                                    <input type="text" placeholder="Event to subscribe" class="form-control" id="event" name="event">
-                                </div>
-                                <button type="submit" class="btn btn-primary" data-dismiss="modal">Subscribe</button>
-                            </form>
-                        </div>
-    
-                    </div>
-                    
-                    <!-- Modal footer -->
-                    <div class="modal-footer">
-                        <!-- <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button> -->
-                    </div>
-    
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <!-- Modal Header -->
+                <div class="modal-header">
+                    <h4 class="modal-title">Subscribe</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
                 </div>
+
+                <!-- Modal body -->
+                <div class="modal-body">
+                    <div class="container">
+                        <form action="/subscribe" method="post">
+                            <div class="form-group">
+                                <input type="text" placeholder="Event to subscribe" class="form-control" id="event"
+                                    name="event">
+                            </div>
+                            <button type="submit" class="btn btn-primary" data-dismiss="modal">Subscribe</button>
+                        </form>
+                    </div>
+
+                </div>
+
+                <!-- Modal footer -->
+                <div class="modal-footer">
+                    <!-- <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button> -->
+                </div>
+
             </div>
         </div>
+    </div>
 
+    <div class="modal fade" id="eventCreate">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <!-- Modal Header -->
+                <div class="modal-header">
+                    <h4 class="modal-title">Create Event</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+
+                <!-- Modal body -->
+                <div class="modal-body">
+                    <div class="container">
+                        <form action="/create-event" method="post">
+                            <div class="form-group">
+                                <input type="text" placeholder="Name of event" class="form-control" id="event"
+                                    name="event">
+                            </div>
+                            <button type="submit" class="btn btn-primary" data-dismiss="modal">Create</button>
+                        </form>
+                    </div>
+
+                </div>
+
+                <!-- Modal footer -->
+                <div class="modal-footer">
+                    <!-- <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button> -->
+                </div>
+
+            </div>
+        </div>
+    </div>
 
 </body>
 
