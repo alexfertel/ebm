@@ -1,26 +1,19 @@
 from flask import render_template, Blueprint, request, redirect
 from werkzeug.utils import secure_filename
-from config import UPLOAD_FOLDER, RECIVED_FOLDER
-from datetime import date
+from config import UPLOAD_FOLDER, TOKEN
+from . import utils
 import os
+
 # from src.client import EBMC
 
 view = Blueprint('views', __name__)
 # ebmc = EBMC()
 
-def get_files():
-    files = os.listdir(RECIVED_FOLDER)
-    file_info = [ 
-        (file, 
-        date.fromtimestamp(os.path.getmtime(os.path.join(RECIVED_FOLDER,file))),
-        os.path.getsize(os.path.join(RECIVED_FOLDER,file))/1000000.0
-         ) for file in files
-        ]
-    return file_info
+
 
 @view.route('/', methods=['GET', 'POST'])
 def index(error = ''):
-    file_info = get_files()
+    file_info = utils.get_files()
     return render_template('index.html', files = file_info, error = error )
 
 @view.route('/upload', methods=['GET', 'POST'])
@@ -43,14 +36,24 @@ def upload_file():
 
 @view.route('/login', methods=['POST'])
 def login():
-    # if ebm.login(request.form['email'],request.form['pass']):
+    # token = ebm.login(request.form['email'],request.form['pass'])
+    # if token:
+    #     TOKEN = token
     #     return redirect('/')
+
+    # TODO: ebm.login debe retornar el token de  usuario que se acaba de logear, 
+    # de lo contrario 0, o algo por el estilo
     return index('Bad Credentials')
     
 @view.route('/register', methods=['POST'])
 def register():
-    pass
+    # ebm.login(request.form['email'],request.form['pass'])
+    return redirect('/')
+     
 
 @view.route('/subscribe', methods=['POST'])
 def subscribe():
-    pass
+    # ebm.subscribe(request.form['event'], TOKEN)
+    # TODO: ver bien que retorna este metodo, si no hace nada, entonce se queda asi
+    # hay q hacer un unsubscribe
+    return redirect('/')
