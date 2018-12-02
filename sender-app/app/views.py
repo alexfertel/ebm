@@ -7,8 +7,8 @@ import os
 # from src.client import EBMC
 
 view = Blueprint('views', __name__)
-# ebmc = EBMC()
 
+# ebmc = EBMC()
 
 
 @view.route('/', methods=['GET', 'POST'])
@@ -49,10 +49,12 @@ def login():
     # de lo contrario 0, o algo por el estilo
     return index('Bad Credentials')
     
-@view.route('/register', methods=['POST'])
+@view.route('/sing-up', methods=['GET','POST'])
 def register():
-    # ebm.login(request.form['email'],request.form['pass'])
-    return redirect('/')
+    if request.method == 'POST':
+        # ebm.login(request.form['email'],request.form['pass'])
+        return redirect('/')
+    return render_template('register.html')
      
 
 @view.route('/subscribe', methods=['POST'])
@@ -67,3 +69,16 @@ def create_event():
     # TODO: ver si implementar esto, 
     return redirect('/')
 
+
+
+@view.route('/settings', methods=['GET','POST'])
+def settings():
+    if request.method == 'POST':
+        # TODO: aqui crear la instancia de ebm con los parametros del form
+        # request.form['email_server']
+        # request.form['user']
+        # request.form['pwd']
+        # request.form['email']
+        # ebmc = EBMC()
+        return redirect('/')
+    return render_template('settings.html')
