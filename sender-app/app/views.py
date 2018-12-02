@@ -8,8 +8,7 @@ import os
 view = Blueprint('views', __name__)
 # ebmc = EBMC()
 
-@view.route('/', methods=['GET', 'POST'])
-def index():
+def get_files():
     files = os.listdir(RECIVED_FOLDER)
     file_info = [ 
         (file, 
@@ -17,7 +16,12 @@ def index():
         os.path.getsize(os.path.join(RECIVED_FOLDER,file))/1000000.0
          ) for file in files
         ]
-    return render_template('index.html', files = file_info )
+    return file_info
+
+@view.route('/', methods=['GET', 'POST'])
+def index(error = ''):
+    file_info = get_files()
+    return render_template('index.html', files = file_info, error = error )
 
 @view.route('/upload', methods=['GET', 'POST'])
 def upload_file():
@@ -36,3 +40,17 @@ def upload_file():
         
         return redirect('/')
     return 'not ok'
+
+@view.route('/login', methods=['POST'])
+def login():
+    # if ebm.login(request.form['email'],request.form['pass']):
+    #     return redirect('/')
+    return index('Bad Credentials')
+    
+@view.route('/register', methods=['POST'])
+def register():
+    pass
+
+@view.route('/subscribe', methods=['POST'])
+def subscribe():
+    pass

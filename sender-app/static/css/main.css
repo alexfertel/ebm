@@ -7,3 +7,7 @@ body{
 .txt-c{
     text-align: left;
 }
+.nav>li{
+    margin-left: 15px;
+    margin-right: 15px;
+}
