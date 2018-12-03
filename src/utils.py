@@ -13,6 +13,5 @@ def cut(body: str, size: int = config.MESSAGE_LENGTH) -> list:
             else:
                 val += body[i] if i != length else body[i]
         return result
-
     else:
         return [body]

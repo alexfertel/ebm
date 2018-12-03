@@ -138,7 +138,9 @@ class Message:
             'message_id': msg.id,
             'block_id': block.index,
             'topic': one of [ REGISTER, LOGIN, PUBLICATION, SUBCRIBE, P2P ],
-            'protocol': one of [ 1, 2, 3 ] ( PUB/SUB, P2P, CONFIG )
+            'protocol': one of [ 1, 2, 3, 4 ] ( PUB/SUB, CONFIG, CMD, ANSWER ),
+            'cmd': one of [],
+            'args': a list of args for the cmd
         }
         :param broker: Broker
         :param addr: str
