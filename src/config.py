@@ -2,3 +2,16 @@ MESSAGE_LENGTH = 1e6
 SYS_MSG = 0
 DATA_MSG = 1
 MAX_BITS = 160
+PROTOCOLS = {
+    'PUB/SUB': 1,
+    'CONFIG': 2,
+    'RPC': 3
+}
+TOPICS = {
+    'REGISTER': 1,
+    'LOGIN': 2,
+    'PUBLICATION': 3,
+    'SUBSCRIPTION': 4,
+    'CMD': 5,
+    'ANSWER': 6
+}

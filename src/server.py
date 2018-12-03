@@ -3,7 +3,7 @@ from mta import Broker
 from user import User
 
 import hashlib
-from config import MAX_BITS
+from config import *
 
 
 class Finger:
@@ -24,6 +24,11 @@ class EBMS:
 
         # subscriptions
         self.subscriptions = {}
+
+        # DHT
+        self.dht = {}
+
+        self.answer = None
 
         # Chord setup
         self.__id = int(hashlib.sha1(str(identifier).encode()).hexdigest(), 16)
@@ -60,23 +65,25 @@ class EBMS:
         """
         self.subscriptions[publisher].remove(subscriber)
 
-    def connect(self, user1: User, user2: User):
-        """
-        This method represents a p2p connection.
-        :param user1: User
-        :param user2: User
-        :return: None
-        """
-        self.p2p.append((user1, user2))
+    def publish(self, msg):
+        subscription_list_id = str(self.identifier) + 'subs'
 
-    def disconnect(self, user1: User, user2: User):
-        """
-        This method represents a p2p disconnection
-        :param user1: User
-        :param user2: User
-        :return: None
-        """
-        self.p2p.remove((user1, user2))
+        value = self.get(hashlib.sha1(subscription_list_id.encode()).hexdigest())
+
+        subs = value.strip('[]').split(',')
+        subs = [item.strip() for item in subs]
+
+        for sub in subs:
+            user_mail = self.get(hashlib.sha1(sub.encode()).hexdigest())
+
+            msg = self.mta.build_message('', protocol=PROTOCOLS['PUB/SUB'], topic=TOPICS['CMD'], cmd='GET', args=f'{key}')
+            msg.send(self.mta, , msg)
+
+        # while True:
+            
+        
+        # value = self.get(hashlib.sha1(subscription_list_id.encode()).hexdigest())
+
 
     @property
     def identifier(self):
@@ -109,7 +116,14 @@ class EBMS:
         return self.ft[i].interval[0] + 1 < identifier <= self.ft[i].interval[1] + 1
 
     def get(self, key):
-        pass
+        if self.is_responsible(key):
+            return self.dht[key]
+
+        msg = self.mta.build_message('', protocol=3, topic='CMD', cmd='GET', args=f'{key}')
+
+        self.find_successor(key)
+
+        return self.answer
 
     def set(self, key, value):
         pass

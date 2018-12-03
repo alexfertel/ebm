@@ -80,7 +80,7 @@ class Broker:
 
         if subject['topic'] == 'ANSWER':  # It is an answer from an RPC command
             # If the node property in the subject equals this node's id then the answer is for this node
-            
+            self.user.answer = answer
             return answer
 
         if block.message in self.messages:
@@ -186,7 +186,8 @@ class Broker:
             'protocol': one of [ 1, 2, 3 ] ( PUB/SUB, CONFIG, RPC ),
             'cmd': one of [find_predecessor, find_succesor],
             'args': a list of args for the cmd,
-            'node': node identifier in chord
+            'node': node identifier in chord,
+            'method_answer': 
         }
         :param body: text
         :param protocol: subject.protocol
