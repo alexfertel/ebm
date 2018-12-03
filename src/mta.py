@@ -25,6 +25,8 @@ class Broker:
         self.messages = {}  # blocks
         self.queue = []  # Block queue
 
+        self.user = None
+
         self.start_thread(self.fetch, (self,))
 
     def __str__(self):
@@ -63,7 +65,22 @@ class Broker:
         # The broker received another block, so lets process it and see if it is part of the current message.
         # The client should have used generate_block_id to create the identifier and it should come in the
         # email Subject. Parse the email and get the Subject.
-        next_block = self.dequeue()
+        block = self.dequeue()
+
+        subject = block.subject
+
+        if subject['protocol'] == 3:  # It is an RPC command
+            answer = self.user.execute(subject['cmd'], *subject['args'])
+            self.send(answer)
+
+        if block.message in self.messages:
+            self.messages[block.message].push(block)
+        else:
+            self.messages[block.message] = [block]
+
+        # if len(self.messages[block.message]) == len(list(filter(lambda x: x[0] == block.message,
+        #                                                         self.messages.items()))[0][0]):
+        #     complete_message = Broker.merge(self.messages[block.message])
 
         # Parse the subject and get the identifier
         # identifier = 'None or some identifier should be here after parsing'
@@ -72,25 +89,14 @@ class Broker:
         # See what message it belongs to, insert it and check the message's lifetime
         # Message.match_block_with_message(incoming_block, self.messages)
 
-        if len(self.queue) > 0:
-            block = self.dequeue()
-            if block.message in self.messages:
-                self.messages[block.message].push(block)
-            else:
-                self.messages[block.message] = [block]
-
-            if len(self.messages[block.message]) == len(list(filter(lambda x: x[0] == block.message,
-                                                                    self.messages.items()))[0][0]):
-                complete_message = Broker.merge(self.messages[block.message])
-                # TODO: este message, hay que empezar a usarlo, pero no se esta teniendo en
-                # cuenta el orden que debe tener con respecto al resto de msg
-
         pass
 
     def loop(self):
         while True:
             print(self)
 
+            if len(self.queue) > 0:
+                self.process()
             # Should start with the synchronization of the imap server,
             # fetching new emails. I think this is of the upmost importance,
             # because new emails could mean errors or p2p messages.
@@ -115,7 +121,8 @@ class Broker:
         items.sort(key=lambda x: x.index)
         return ''.join(map(lambda x: x.text, items))
 
-    def send(self, msg: EmailMessage):
+    @staticmethod
+    def send(addr, msg: EmailMessage):
         """
         This method contains the logic for sending an email, which comprises of:
         - Connect to the smtp server
@@ -125,15 +132,18 @@ class Broker:
         - Building correctly the emails according to the email library
         - Make the subject a json
         - Notiifying the consumer app of the result.
+
+        :param addr: str
         :param msg: Block
         :return: bool
         """
-        smtp: smtplib.SMTP = smtplib.SMTP(self.addr)  # smtp instance
+        smtp: smtplib.SMTP = smtplib.SMTP(addr)  # smtp instance
         smtp.set_debuglevel(1)
         smtp.send_message(msg)
         smtp.quit()
 
-    def recv(self, addr, user: User = User('id', 'myemail@test.com', 'usr', 'passw')):
+    @staticmethod
+    def recv(addr, user: User = User('id', 'myemail@test.com', 'usr', 'passw')):
         """
         This method contains the logic for fetching the next batch of messages
         from the imap server.
@@ -162,3 +172,34 @@ class Broker:
                 unread.append(message)  # For now just append to the queue
 
         return unread
+
+    @staticmethod
+    def build_message(body: str, protocol: int = 2, topic: str = 'P2P', cmd: str = '', args: list = None):
+        """
+        subject = {
+            'message_id': msg.id,
+            'block_id': block.index,
+            'topic': one of [ REGISTER, LOGIN, PUBLICATION, SUBCRIBE, P2P ],
+            'protocol': one of [ 1, 2, 3, 4 ] ( PUB/SUB, CONFIG, CMD, ANSWER ),
+            'cmd': one of [],
+            'args': a list of args for the cmd
+        }
+
+        :param body: text
+        :param protocol: subject.protocol
+        :param topic: subject.topic
+        :param cmd: subject.cmd
+        :param args: subject.args
+        :return: Message
+        """
+
+        msg = Message(
+            body=body,
+            subject={
+                'topic': topic,
+                'protocol': protocol,
+                'cmd': cmd,
+                'args': args
+            })
+
+        return msg
