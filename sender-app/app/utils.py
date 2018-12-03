@@ -24,5 +24,6 @@ def send_file(file_location, target, type):
         file.read(size%1000)
         #mandar correro con esta info
     file.close()
+    os.remove(file_location)
     # TODO: buscar como borrar los archivos, ya que no es necsarios q 
     # persistan en el cliente una vez q se mandaron
