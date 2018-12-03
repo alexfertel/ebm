@@ -39,6 +39,9 @@ class EBMS:
 
         self.ft[0] = 'unknown'  # At first the predecessor is unknown
 
+        # Map between nodes and their emails
+        self.nodeSet = {}
+
     def subscribe(self, subscriber: User, publisher: User):
         """
             This method represents a subscription.
@@ -87,19 +90,23 @@ class EBMS:
     def predecessor(self) -> int:
         return self.ft[0].node
 
-    def find_successor(self, identifier) -> Node:
+    def find_successor(self, identifier) -> str:
         n_prime = self.find_predecessor(identifier)
-        return n_prime.successor
 
-    # FIXME: Hay que anhadir los rpc y hay que migrar este codigo al server
-    def find_predecessor(self, identifier) -> Node:
-        n_prime: Node = self
+        return self.nodeSet[n_prime.successor]
+
+    def find_predecessor(self, identifier) -> int:
         # compute closest finger preceding id
-        while not (n_prime.identifier < identifier <= n_prime.successor):
-            for i in range(len(n_prime.ft) - 1, 0, -1):
-                if self.ft[i].interval[0] + 1 < identifier <= n_prime.ft[i].interval[1] + 1:
-                    n_prime = self.ft[i].node
-        return n_prime
+        if not (self.identifier < identifier <= self.successor):
+            for i in range(len(self.ft) - 1, 0, -1):
+                if self.is_responsible(identifier):
+                    # Found predecessor
+                    return self.nodeSet[self.ft[i].node]
+        # Found node responsible for next iteration
+        return self.identifier
+
+    def is_responsible(self, identifier):
+        return self.ft[i].interval[0] + 1 < identifier <= self.ft[i].interval[1] + 1
 
     def get(self, key):
         pass
