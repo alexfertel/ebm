@@ -137,10 +137,11 @@ class Message:
         subject = {
             'message_id': msg.id,
             'block_id': block.index,
-            'topic': one of [ REGISTER, LOGIN, PUBLICATION, SUBCRIBE, P2P ],
-            'protocol': one of [ 1, 2, 3, 4 ] ( PUB/SUB, CONFIG, CMD, ANSWER ),
+            'topic': one of [ REGISTER, LOGIN, PUBLICATION, SUBCRIBE, P2P, CMD, ANSWER ],
+            'protocol': one of [ 1, 2, 3 ] ( PUB/SUB, CONFIG, RPC ),
             'cmd': one of [],
-            'args': a list of args for the cmd
+            'args': a list of args for the cmd,
+            'node': node identifier in chord
         }
         :param broker: Broker
         :param addr: str

@@ -42,3 +42,4 @@ build_dependencies
 */**/__pycache__
 /sender-app/uploads
 /sender-app/static/recived
+rpyc*

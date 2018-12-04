@@ -15,3 +15,19 @@ def cut(body: str, size: int = config.MESSAGE_LENGTH) -> list:
         return result
     else:
         return [body]
+
+
+def inbetween(a, b, c):
+    """
+    Is c between a and b
+    :param a: int
+    :param b: int
+    :param c: int
+    :return: bool
+    """
+    a = a % SIZE
+    b = b % SIZE
+    c = c % SIZE
+    if a < b:
+        return a <= c <= b
+    return a <= c or c <= b

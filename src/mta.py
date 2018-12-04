@@ -69,9 +69,19 @@ class Broker:
 
         subject = block.subject
 
-        if subject['protocol'] == 3:  # It is an RPC command
+        if subject['topic'] == 'CMD':  # It is an RPC command
+            # So this is something like n.find_predecessor(id)
+            # where this node is n, so if we need to chain a call to another node
+            # it would recursively send the RPC call
+            # therefore receivng an email with protocol 4 with the answer
             answer = self.user.execute(subject['cmd'], *subject['args'])
-            self.send(answer)
+            msg = self.mta.build_message(answer, protocol=3, topic='ANSWER')
+            self.send(block.sent_from, msg)
+
+        if subject['topic'] == 'ANSWER':  # It is an answer from an RPC command
+            # If the node property in the subject equals this node's id then the answer is for this node
+            self.user.answer = answer
+            return answer
 
         if block.message in self.messages:
             self.messages[block.message].push(block)
@@ -149,17 +159,11 @@ class Broker:
         from the imap server.
         :return: list[Block]
         """
-
-        # if through_ssl:
         ssl_context = ssl.create_default_context()
 
         ssl_context.check_hostname = False
 
         ssl_context.verify_mode = ssl.CERT_NONE
-
-        #     self.imap = imapclient.IMAPClient(addr, ssl_context=ssl_context)
-        # else:
-        #     self.imap = imapclient.IMAPClient(addr)
 
         unread = []
         with Imbox(addr,
@@ -173,18 +177,18 @@ class Broker:
 
         return unread
 
-    @staticmethod
-    def build_message(body: str, protocol: int = 2, topic: str = 'P2P', cmd: str = '', args: list = None):
+    def build_message(self, body: str, protocol: int = 2, topic: str = 'P2P', cmd: str = '', args: list = None):
         """
         subject = {
             'message_id': msg.id,
             'block_id': block.index,
-            'topic': one of [ REGISTER, LOGIN, PUBLICATION, SUBCRIBE, P2P ],
-            'protocol': one of [ 1, 2, 3, 4 ] ( PUB/SUB, CONFIG, CMD, ANSWER ),
-            'cmd': one of [],
-            'args': a list of args for the cmd
+            'topic': one of [ REGISTER, LOGIN, PUBLICATION, SUBCRIBE, P2P, CMD, ANSWER ],
+            'protocol': one of [ 1, 2, 3 ] ( PUB/SUB, CONFIG, RPC ),
+            'cmd': one of [find_predecessor, find_succesor],
+            'args': a list of args for the cmd,
+            'node': node identifier in chord,
+            'method_answer': 
         }
-
         :param body: text
         :param protocol: subject.protocol
         :param topic: subject.topic
@@ -199,7 +203,8 @@ class Broker:
                 'topic': topic,
                 'protocol': protocol,
                 'cmd': cmd,
-                'args': args
+                'args': args,
+                'node': self.identifier
             })
 
         return msg
