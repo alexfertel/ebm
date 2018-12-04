@@ -43,3 +43,5 @@ build_dependencies
 /sender-app/uploads
 /sender-app/static/recived
 rpyc*
+plumbum*
+ebm.tar.xz
