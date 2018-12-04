@@ -40,3 +40,4 @@ testem.log
 Thumbs.db
 build_dependencies
 */**/__pycache__
+rpyc*
