@@ -25,9 +25,9 @@ def inbetween(a, b, c):
     :param c: int
     :return: bool
     """
-    a = a % SIZE
-    b = b % SIZE
-    c = c % SIZE
+    a = a % config.SIZE
+    b = b % config.SIZE
+    c = c % config.SIZE
     if a < b:
         return a <= c <= b
     return a <= c or c <= b

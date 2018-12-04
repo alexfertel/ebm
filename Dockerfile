@@ -6,5 +6,5 @@ WORKDIR /usr/ebm
 
 COPY . .
 
-
+WORKDIR /usr/ebm/src
 

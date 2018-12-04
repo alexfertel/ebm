@@ -34,7 +34,7 @@ class EBMS(rpyc.Service, DHT):
         for i in range(1, len(self.ft)):
             self.ft[i].interval = self.ft[i].start, self.ft[i + 1].start
 
-        self.ft[0] = 'unknown'  # At first the predecessor is unknown
+        self.ft[0] = Finger()  # At first the predecessor is unknown
 
         # Map between nodes and their addresses
         self.nodeSet = {}
@@ -154,8 +154,9 @@ class EBMS(rpyc.Service, DHT):
 
 if __name__ == "__main__":
     from rpyc.utils.server import ThreadedServer
+    import sys
 
-    t = ThreadedServer(EBMS('papelito'), port=config.PORT, protocol_config={
+    t = ThreadedServer(EBMS('papelito', sys.argv[1]), port=config.PORT, protocol_config={
         'allow_public_attrs': True,
     })
     # t = ThreadedServer(MyService, port=config.PORT)
