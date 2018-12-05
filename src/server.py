@@ -174,7 +174,7 @@ class EBMS(rpyc.Service):
     def fix_fingers(self):
         logger.debug(f'Fixing fingers on server: {self.identifier % 100}')
         if len(self.ft) > 2:
-            i = random.randint(2, len(self.ft))
+            i = random.randint(2, len(self.ft) - 1)
             node = self.find_successor(self.ft[i].start)
             self.ft[i].node[0] = node.identifier
             self.ft[i].node[1] = node.ip
