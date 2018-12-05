@@ -119,6 +119,7 @@ class EBMS(rpyc.Service):
 
             print(n_prime_addr)
             n_prime = rpyc.connect(n_prime_addr, config.PORT).root
+            print(n_prime.ft)
 
             self.ft[1] = n_prime.find_successor(self.identifier)
         else:  # n is the only node in the network
