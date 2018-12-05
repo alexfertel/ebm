@@ -7,8 +7,6 @@ import random
 import hashlib
 import logging
 import json
-import copy
-import threading
 
 from utils import inbetween
 from decorators import retry
@@ -21,8 +19,6 @@ class EBMS(rpyc.Service):
     def __init__(self, server_email_addr: str = 'a.fertel@estudiantes.matcom.uh.cu',
                  join_addr: str = None,
                  ip_addr: str = None):
-
-        self.lock = threading.Lock()
 
         # Chord setup
         self.__id = int(hashlib.sha1(str(server_email_addr).encode()).hexdigest(), 16) % config.SIZE
@@ -110,10 +106,8 @@ class EBMS(rpyc.Service):
         succ = self.exposed_successor()
 
         # succ = n_prime.exposed_successor()
-        self.lock.acquire()
         if succ[0] == self.exposed_identifier():
             return self.exposed_identifier(), self.ip
-        self.lock.release()
 
         while not inbetween(n_prime[0] + 1, succ[0] + 1, exposed_identifier):
             logger.debug(
@@ -182,12 +176,8 @@ class EBMS(rpyc.Service):
     @retry(10)
     def stabilize(self):
         logger.debug(f'\nStabilizing on server: {self.exposed_identifier() % config.SIZE}\n')
-        self.lock.acquire()
         succ = self.exposed_successor()
-        self.lock.release()
-
-        arg = succ[1]
-        x = self.remote_request(arg, 'predecessor')
+        x = self.remote_request(succ[1], 'predecessor')
 
         # n_prime = rpyc.connect(self.ft[1][1], config.PORT).root if self.ft[1][0] != self.exposed_identifier() else self
         # logger.debug(f'N_prime on stabilizing on server: {n_prime}\n')
