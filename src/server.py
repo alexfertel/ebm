@@ -150,13 +150,12 @@ class EBMS(rpyc.Service):
             self.ft[0] = 'unknown'
 
             print(n_prime_addr)
-            node = self.remote_request(n_prime_addr, 'find_successor', self.exposed_identifier())
+            finger = self.remote_request(n_prime_addr, 'find_successor', self.exposed_identifier())
             # n_prime = rpyc.connect(n_prime_addr, config.PORT).root
             # print(n_prime.ft)
 
             # node = n_prime.exposed_find_successor(self.exposed_identifier())
-            self.ft[1].node[0] = node.exposed_identifier()
-            self.ft[1].node[1] = node.ip
+            self.ft[1] = finger
         else:  # n is the only node in the network
             logger.debug(f'First node of the network -> server: {self.exposed_identifier()}')
             self.ft[1].node[0] = self.exposed_identifier()
@@ -222,8 +221,7 @@ class EBMS(rpyc.Service):
             # assert isinstance(node, EBMS), 'node in fix_finger method is not an EBMS'
             # assert isinstance(node.exposed_identifier(), int), 'node.exposed_identifier() in fix_finger method is not an integer'
             # assert isinstance(node.ip, str), 'node.ip in fix_finger method is not a string'
-            self.ft[i].node[0] = finger.node[0]
-            self.ft[i].node[1] = finger.node[1]
+            self.ft[i] = finger
 
     def get(self, key):
         node = self.exposed_find_successor(key)
