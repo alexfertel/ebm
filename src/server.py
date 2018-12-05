@@ -154,7 +154,7 @@ class EBMS(rpyc.Service):
     # and tell the successor about n.
     @retry(3)
     def stabilize(self):
-        logger.debug(f'Stabilizing on server: {self.identifier % 100}')
+        logger.debug(f'\nStabilizing on server: {self.identifier % 100}\n')
         n_prime = rpyc.connect(self.ft[1].node[1], config.PORT).root
         x = n_prime.successor.predecessor
         if inbetween(self.identifier + 1, self.ft[1].node[0] - 1, x.identifier):
