@@ -30,7 +30,7 @@ class EBMS(rpyc.Service):
                  join_addr: str = None,
                  ip_addr: str = None):
         # Chord node setup
-        self.__id = int(hashlib.sha1(str(server_email_addr).encode()).hexdigest(), 16)
+        self.__id = int(hashlib.sha1(str(server_email_addr).encode()).hexdigest(), 16) % config.SIZE
         # Compute Finger Table computable properties (start, interval).
         # The .node property is computed when a node joins or leaves and at the chord start
         logger.debug(f'Initializing fingers on server: {self.identifier % 100}')
