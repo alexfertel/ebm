@@ -16,13 +16,8 @@ logger = logging.getLogger('SERVER')
 
 
 class Finger:
-    def __init__(self, start: int = -1, interval: tuple = (-1, -1), node: list = None):
-        self.start = start
-        self.interval = interval
-        self.node = node if node else [-1, '']
-
-    def __repr__(self):
-        return f'start: {self.start}, interval: [{self.interval[0]}, {self.interval[1]}), node: {self.node}'
+    def __init__(self, identifier, ip):
+        self.node = (identifier, ip)
 
 
 class EBMS(rpyc.Service):
@@ -34,15 +29,9 @@ class EBMS(rpyc.Service):
         # Compute Finger Table computable properties (start, interval).
         # The .node property is computed when a node joins or leaves and at the chord start
         logger.debug(f'Initializing fingers on server: {self.identifier % config.SIZE}')
-        self.ft = {
-            i: Finger( start=((self.identifier + 2 ** (i - 1)) % config.SIZE) )
-            for i in range(1, config.MAX_BITS + 1)
-        }
+        self.ft: list = [Finger(-1, '') for _ in range(config.MAX_BITS + 1)]
 
-        for i in range(1, config.MAX_BITS):
-            self.ft[i].interval = self.ft[i].start, self.ft[(i + 1)].start
-
-        self.ft[0] = Finger(start=self.ft[1].start, interval=(self.ft[config.MAX_BITS].start, self.ft[1].start))
+        self.ft[0] = 'unknown'
 
         # self.ft[0] = Finger()  # At first the predecessor is unknown
 
@@ -100,7 +89,8 @@ class EBMS(rpyc.Service):
                 f'n_prime.identifier: {n_prime.identifier}\tn_prime.successor:{n_prime.successor.identifier}')
             n_prime = n_prime.closest_preceding_finger(identifier)
         else:
-            logger.debug(f'Else of while of find_predecessor({identifier % config.SIZE}) on server: {self.identifier % config.SIZE}')
+            logger.debug(
+                f'Else of while of find_predecessor({identifier % config.SIZE}) on server: {self.identifier % config.SIZE}')
 
         # Found predecessor
         logger.debug(f'End of find_predecessor({identifier % config.SIZE}) on server: {self.identifier % config.SIZE}')
@@ -139,10 +129,12 @@ class EBMS(rpyc.Service):
             self.ft[1].node[1] = node.ip
         else:  # n is the only node in the network
             logger.debug(f'First node of the network -> server: {self.identifier}')
-            for i in range(len(self.ft)):
-                # FIXME Rebuild the image to add this line
-                self.ft[i].node[0] = self.identifier
-                self.ft[i].node[1] = self.ip
+            self.ft[1].node[0] = self.identifier
+            self.ft[1].node[1] = self.ip
+            # for i in range(1, config.MAX_BITS + 1):
+            # FIXME Rebuild the image to add this line
+            # self.ft[i].node[0] = self.identifier
+            # self.ft[i].node[1] = self.ip
             logger.debug(f'Successor of the first node of the network {self.ft[1].node}')
             logger.debug(f'Predecessor of the first node of the network {self.ft[0].node}')
 
