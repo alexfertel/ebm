@@ -70,14 +70,14 @@ class EBMS(rpyc.Service):
     @property
     def successor(self):
         logger.debug(f'Calling successor on server: {self.identifier % 100}')
-        node = rpyc.connect(self.ft[1].node[1], config.PORT).root
+        node = rpyc.connect(self.ft[1].node[1], config.PORT).root if self.ft[1].node[0] != self.identifier else self
         logger.debug(f'Successor on server: {self.identifier % 100} yielded {node.identifier}')
         return node
 
     @property
     def predecessor(self):
         logger.debug(f'Calling predecessor on server: {self.identifier % 100}')
-        node = rpyc.connect(self.ft[0].node[1], config.PORT).root
+        node = rpyc.connect(self.ft[0].node[1], config.PORT).root if self.ft[0].node[0] != self.identifier else self
         logger.debug(f'Predecessor on server: {self.identifier % 100} yielded {node.identifier}')
         return node
 
