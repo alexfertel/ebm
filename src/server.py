@@ -93,8 +93,9 @@ class EBMS(rpyc.Service):
         if n_prime.successor.identifier == self.identifier:
             return self
         while not (n_prime.identifier < identifier <= n_prime.successor.identifier):
-            logger.debug(f'While condition inside find_predecessor({identifier % 100}) on server: {self.identifier % 100}\n\t'
-                         f'n_prime.identifier: {n_prime.identifier}\tn_prime.successor:{n_prime.successor.identifier}')
+            logger.debug(
+                f'While condition inside find_predecessor({identifier % 100}) on server: {self.identifier % 100}\n\t'
+                f'n_prime.identifier: {n_prime.identifier}\tn_prime.successor:{n_prime.successor.identifier}')
             n_prime = n_prime.closest_preceding_finger(identifier)
         else:
             logger.debug(f'Else of while of find_predecessor({identifier % 100}) on server: {self.identifier % 100}')
@@ -144,6 +145,11 @@ class EBMS(rpyc.Service):
         logger.debug(f'Predecessor of node: {self.identifier} is {self.ft[0].node}')
         logger.debug(f'Successful join of node: {self.identifier} to chord')
 
+        logger.debug(f'Starting stabilization of node: {self.identifier}')
+        self.stabilize()
+        logger.debug(f'Start fixing fingers of node: {self.identifier}')
+        self.fix_fingers()
+
     # periodically verify n's immediate succesor,
     # and tell the successor about n.
     @retry(3)
@@ -151,17 +157,17 @@ class EBMS(rpyc.Service):
         logger.debug(f'Stabilizing on server: {self.identifier % 100}')
         n_prime = rpyc.connect(self.ft[1].node[1], config.PORT).root
         x = n_prime.successor.predecessor
-        if inbetween(self.identifier + 1, self.ft[1].node[0] - 1):
+        if inbetween(self.identifier + 1, self.ft[1].node[0] - 1, x.identifier):
             self.ft[1].node[0] = x.identifier
             self.ft[1].node[1] = x.ip
-        n_prime.notify(self.identifier)
+        n_prime.notify(tuple([self.identifier, self.ip]))
 
     # n' thinks it might be our predecessor.
-    def notify(self, n_prime):
+    def notify(self, n_prime_key_addr: tuple):
         logger.debug(f'Notifying on server: {self.identifier % 100}')
         if self.ft[0] == 'unknown' or inbetween(self.ft[0].node[0] + 1, self.identifier - 1, n_prime):
-            self.ft[0].node[0] = n_prime
-            # self.ft[0].node[1] = self.ip  # FIXME I think this will be missing
+            self.ft[0].node[0] = n_prime_key_addr[0]
+            self.ft[0].node[1] = n_prime_key_addr[1]
 
     # periodically refresh finger table entries
     @retry(2)
