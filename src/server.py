@@ -88,15 +88,17 @@ class EBMS(rpyc.Service):
         logger.debug(f'Calling find_predecessor({identifier % 100}) on server: {self.identifier % 100}')
         n_prime = self
         # compute closest finger preceding id
-        logger.debug(f'Condition inside find_predecessor({identifier % 100}) on server: {self.identifier % 100}\n\t\t'
+        logger.debug(f'While condition inside find_predecessor({identifier % 100}) on server: {self.identifier % 100}\n\t\t'
                      f'n_prime.identifier: {n_prime.identifier}\tn_prime.successor:{n_prime.successor.identifier}')
         while not (n_prime.identifier < identifier <= n_prime.successor.identifier):
             for i in range(len(n_prime.ft) - 1, 0, -1):
                 if inbetween(n_prime.ft[i].interval[0] + 1, n_prime.ft[i].interval[1] + 1, identifier):
                     # Found node responsible for next iteration
                     # Here, we should make a remote call
+                    logger.debug(f'If condition inside find_predecessor({identifier % 100}) on server: '
+                                 f'{self.identifier % 100}\n\t\t')
                     n_prime = rpyc.connect(n_prime.ft[i].node[1], config.PORT).root
-
+                    return n_prime
                     # n_primer = n_prime.ft[i].node
         else:
             logger.debug(f'Else of while of find_predecessor({identifier % 100}) on server: {self.identifier % 100}')
