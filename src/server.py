@@ -36,13 +36,13 @@ class EBMS(rpyc.Service):
         logger.debug(f'Initializing fingers on server: {self.identifier % config.SIZE}')
         self.ft = {
             i: Finger(start=(self.identifier + 2 ** (i - 1)) % 2 ** config.MAX_BITS)
-            for i in range(1, config.MAX_BITS + 1)
+            for i in range(config.MAX_BITS + 1)
         }
 
-        for i in range(1, len(self.ft)):
+        for i in range(len(self.ft)):
             self.ft[i].interval = self.ft[i].start, self.ft[i + 1].start
 
-        self.ft[0] = Finger()  # At first the predecessor is unknown
+        # self.ft[0] = Finger()  # At first the predecessor is unknown
 
         # Init data file
         with open('data.json', 'w+') as fd:
@@ -159,7 +159,7 @@ class EBMS(rpyc.Service):
     @retry(3)
     def stabilize(self):
         logger.debug(f'\nStabilizing on server: {self.identifier % config.SIZE}\n')
-        n_prime = rpyc.connect(self.ft[1].node[1], config.PORT).root
+        n_prime = rpyc.connect(self.ft[1].node[1], config.PORT).root if self.ft[1].node[0] != self.identifier else self
         x = n_prime.successor.predecessor
         if inbetween(self.identifier + 1, self.ft[1].node[0] - 1, x.identifier):
             self.ft[1].node[0] = x.identifier
@@ -169,7 +169,7 @@ class EBMS(rpyc.Service):
     # n' thinks it might be our predecessor.
     def notify(self, n_prime_key_addr: tuple):
         logger.debug(f'Notifying on server: {self.identifier % config.SIZE}')
-        if self.ft[0] == 'unknown' or inbetween(self.ft[0].node[0] + 1, self.identifier - 1, n_prime_key_addr[0]):
+        if self.ft[0].node[0] == -1 or inbetween(self.ft[0].node[0] + 1, self.identifier - 1, n_prime_key_addr[0]):
             self.ft[0].node[0] = n_prime_key_addr[0]
             self.ft[0].node[1] = n_prime_key_addr[1]
 
