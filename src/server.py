@@ -35,12 +35,14 @@ class EBMS(rpyc.Service):
         # The .node property is computed when a node joins or leaves and at the chord start
         logger.debug(f'Initializing fingers on server: {self.identifier % config.SIZE}')
         self.ft = {
-            i: Finger(start=(self.identifier + 2 ** (i - 1)) % 2 ** config.MAX_BITS)
-            for i in range(config.MAX_BITS + 1)
+            i: Finger( start=((self.identifier + 2 ** (i - 1)) % config.SIZE) )
+            for i in range(1, config.MAX_BITS + 1)
         }
 
-        for i in range(config.MAX_BITS + 1):
-            self.ft[i].interval = self.ft[i].start, self.ft[(i + 1) % config.MAX_BITS].start
+        for i in range(1, config.MAX_BITS):
+            self.ft[i].interval = self.ft[i].start, self.ft[(i + 1)].start
+
+        self.ft[0] = Finger(start=self.ft[1].start, interval=(self.ft[config.MAX_BITS].start, self.ft[1].start))
 
         # self.ft[0] = Finger()  # At first the predecessor is unknown
 
