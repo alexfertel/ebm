@@ -8,6 +8,8 @@ import hashlib
 import logging
 import json
 import copy
+import threading
+
 
 from utils import inbetween
 from decorators import retry
@@ -28,6 +30,9 @@ class EBMS(rpyc.Service):
     def __init__(self, server_email_addr: str = 'a.fertel@estudiantes.matcom.uh.cu',
                  join_addr: str = None,
                  ip_addr: str = None):
+        
+        self.lock = threading.Lock()
+        
         # Chord node setup
         self.__id = int(hashlib.sha1(str(server_email_addr).encode()).hexdigest(), 16) % config.SIZE
         # Compute Finger Table computable properties (start, interval).
@@ -70,10 +75,12 @@ class EBMS(rpyc.Service):
             m = getattr(self, 'exposed_' + method)
             ans = m(*args)
         else:
+            self.lock.acquire()
             c = rpyc.connect(ip, config.PORT)
             m = getattr(c.root, method)
             ans = m(*args)
             c.close()
+            self.lock.release()
         return ans
 
     def exposed_identifier(self):
@@ -81,7 +88,7 @@ class EBMS(rpyc.Service):
 
     def exposed_successor(self):
         logger.debug(f'Calling exposed_successor on server: {self.exposed_identifier() % config.SIZE}')
-        return copy.copy(self.ft[1])
+        return self.ft[1]
 
         # node = rpyc.connect(self.ft[1].node[1], config.PORT).root if self.ft[1].node[0] != self.exposed_identifier() else self
         # logger.debug(f'exposed_successor on server: {self.exposed_identifier() % config.SIZE} yielded {node.exposed_identifier()}')
@@ -89,7 +96,7 @@ class EBMS(rpyc.Service):
 
     def exposed_predecessor(self):
         logger.debug(f'Calling exposed_predecessor on server: {self.exposed_identifier() % config.SIZE}')
-        return copy.copy(self.ft[0])
+        return self.ft[0]
         # if self.ft[0] == 'unknown':
         #     return self
 
