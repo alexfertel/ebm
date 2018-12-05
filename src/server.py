@@ -163,7 +163,10 @@ class EBMS(rpyc.Service):
     def stabilize(self):
         logger.debug(f'\nStabilizing on server: {self.identifier % config.SIZE}\n')
         n_prime = rpyc.connect(self.ft[1].node[1], config.PORT).root if self.ft[1].node[0] != self.identifier else self
+        logger.debug(f'N_prime on stabilizing on server: {n_prime}\n')
+        logger.debug(f'succ(N_prime) on stabilizing on server: {n_prime.successor}\n')
         x = n_prime.successor.predecessor
+        # logger.debug(f'\nStabilizing on server: {self.identifier % config.SIZE}\n')
         if inbetween(self.identifier + 1, self.ft[1].node[0] - 1, x.identifier):
             self.ft[1].node[0] = x.identifier
             self.ft[1].node[1] = x.ip
