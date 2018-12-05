@@ -74,6 +74,8 @@ class EBMS(rpyc.Service):
         if self.ft[0] == 'unknown':
             return self
 
+        logger.debug(f'Debugging error AttributeError: list object has no attribute node')
+        logger.debug(f'self.ft {self.ft} | self.identifier {self.identifier}')
         node = rpyc.connect(self.ft[0].node[1], config.PORT).root if self.ft[0].node[0] != self.identifier else self
         logger.debug(f'Predecessor on server: {self.identifier % config.SIZE} yielded {node.identifier}')
         return node
@@ -124,7 +126,7 @@ class EBMS(rpyc.Service):
     def join(self, n_prime_addr):
         if n_prime_addr:
             logger.debug(f'Joining network to the node {n_prime_addr} -> server: {self.identifier}')
-            self.ft[0].node[0] = -1
+            self.ft[0] = 'unknown'
 
             print(n_prime_addr)
             n_prime = rpyc.connect(n_prime_addr, config.PORT).root
