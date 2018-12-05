@@ -25,7 +25,7 @@ class Finger:
         return f'start: {self.start}, interval: [{self.interval[0]}, {self.interval[1]}), node: {self.node}'
 
 
-class EBMS(rpyc.Service, DHT):
+class EBMS(rpyc.Service):
     def __init__(self, server_email_addr: str, join_addr: str = None):
         # Chord node setup
         self.__id = int(hashlib.sha1(str(server_email_addr).encode()).hexdigest(), 16)
@@ -61,23 +61,23 @@ class EBMS(rpyc.Service, DHT):
         return self.__id
 
     @property
-    def successor(self) -> int:
+    def successor(self):
         logger.debug(f'Calling successor on server: {self.identifier}')
         node = rpyc.connect(self.ft[1].node[1], config.PORT).root
         return node
 
     @property
-    def predecessor(self) -> int:
+    def predecessor(self):
         logger.debug(f'Calling predecessor on server: {self.identifier}')
         node = rpyc.connect(self.ft[0].node[1], config.PORT).root
         return node
 
-    def find_successor(self, identifier) -> str:
+    def find_successor(self, identifier):
         logger.debug(f'Calling find_successor() on server: {self.identifier}')
         n_prime = self.find_predecessor(identifier)
         return n_prime.successor
 
-    def find_predecessor(self, identifier) -> int:
+    def find_predecessor(self, identifier):
         logger.debug(f'Calling find_predecessor() on server: {self.identifier}')
         n_prime = self
         # compute closest finger preceding id
@@ -136,8 +136,8 @@ class EBMS(rpyc.Service, DHT):
         if len(self.ft) > 2:
             i = random.randint(2, len(self.ft))
             node = self.find_successor(self.ft[i].start)
-            self.finger[i].node[0] = node.identifier
-            self.finger[i].node[1] = node.ip
+            self.ft[i].node[0] = node.identifier
+            self.ft[i].node[1] = node.ip
 
     def get(self, key):
         node = self.find_successor(key)
@@ -166,7 +166,7 @@ if __name__ == "__main__":
     from rpyc.utils.server import ThreadedServer
     import sys
 
-    if sys.argc < 3:
+    if len(sys.argv) < 3:
         print('Usage: ./server.py <email_address> <ip_address>')
         logger.debug(f'Initializing ThreadedServer with default values: ebm@correo.estudiantes.matcom.uh.cu'
                      f' and 10.6.98.49.')
