@@ -101,7 +101,7 @@ class EBMS(rpyc.Service):
                                  f'{self.identifier % 100}\n\t'
                                  f'iteration {i} yielded that responsible node is: {n_prime.ft[i].node[1]}')
                     n_prime = rpyc.connect(n_prime.ft[i].node[1], config.PORT).root
-                    return n_prime
+                    # return n_prime
                     # n_primer = n_prime.ft[i].node
         else:
             logger.debug(f'Else of while of find_predecessor({identifier % 100}) on server: {self.identifier % 100}')
