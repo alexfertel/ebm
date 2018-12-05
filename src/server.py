@@ -16,10 +16,10 @@ logger = logging.getLogger('SERVER')
 
 
 class Finger:
-    def __init__(self, start: int = -1, interval: tuple = (-1, -1), node: tuple = (-1, '')):
+    def __init__(self, start: int = -1, interval: tuple = (-1, -1), node: list = None):
         self.start = start
         self.interval = interval
-        self.node = node
+        self.node = node if not node else [-1, '']
 
     def __repr__(self):
         return f'start: {self.start}, interval: [{self.interval[0]}, {self.interval[1]}), node: {self.node}'
@@ -168,7 +168,7 @@ if __name__ == "__main__":
 
     if len(sys.argv) < 3:
         print('Usage: ./server.py <email_address> <ip_address>')
-        logger.debug(f'Initializing ThreadedServer with default values: ebm@correo.estudiantes.matcom.uh.cu'
+        logger.debug(f'Initializing ThreadedServer with default values: a.fertel@correo.estudiantes.matcom.uh.cu'
                      f' and 10.6.98.49.')
         t = ThreadedServer(EBMS(), port=config.PORT, protocol_config={
             'allow_public_attrs': True,
