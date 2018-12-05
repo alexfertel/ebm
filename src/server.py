@@ -165,7 +165,7 @@ class EBMS(rpyc.Service):
     # n' thinks it might be our predecessor.
     def notify(self, n_prime_key_addr: tuple):
         logger.debug(f'Notifying on server: {self.identifier % 100}')
-        if self.ft[0] == 'unknown' or inbetween(self.ft[0].node[0] + 1, self.identifier - 1, n_prime):
+        if self.ft[0] == 'unknown' or inbetween(self.ft[0].node[0] + 1, self.identifier - 1, n_prime_key_addr[0]):
             self.ft[0].node[0] = n_prime_key_addr[0]
             self.ft[0].node[1] = n_prime_key_addr[1]
 
