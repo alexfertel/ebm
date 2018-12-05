@@ -136,10 +136,10 @@ class EBMS(rpyc.Service):
             # self.ft[i].node[0] = self.identifier
             # self.ft[i].node[1] = self.ip
             logger.debug(f'Successor of the first node of the network {self.ft[1].node}')
-            logger.debug(f'Predecessor of the first node of the network {self.ft[0].node}')
+            logger.debug(f'Predecessor of the first node of the network {self.ft[0]}')
 
         logger.debug(f'Successor of node: {self.identifier} is {self.ft[1].node}')
-        logger.debug(f'Predecessor of node: {self.identifier} is {self.ft[0].node}')
+        logger.debug(f'Predecessor of node: {self.identifier} is {self.ft[0].node if self.ft[0] else self.ft[0]}')
         logger.debug(f'Finger Table values of node: {self.identifier} are {self.ft}')
         logger.debug(f'Successful join of node: {self.identifier} to chord')
 
