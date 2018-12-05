@@ -40,7 +40,7 @@ class EBMS(rpyc.Service):
         }
 
         for i in range(config.MAX_BITS):
-            self.ft[i].interval = self.ft[i].start, self.ft[i + 1 % config.MAX_BITS].start
+            self.ft[i].interval = self.ft[i].start, self.ft[(i + 1) % config.MAX_BITS].start
 
         # self.ft[0] = Finger()  # At first the predecessor is unknown
 
