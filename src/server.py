@@ -93,22 +93,27 @@ class EBMS(rpyc.Service):
         logger.debug(f'While condition inside find_predecessor({identifier % 100}) on server: {self.identifier % 100}\n\t'
                      f'n_prime.identifier: {n_prime.identifier}\tn_prime.successor:{n_prime.successor.identifier}')
         while not (n_prime.identifier < identifier <= n_prime.successor.identifier):
-            for i in range(len(n_prime.ft) - 1, 0, -1):
-                if inbetween(n_prime.ft[i].interval[0] + 1, n_prime.ft[i].interval[1] + 1, identifier):
-                    # Found node responsible for next iteration
-                    # Here, we should make a remote call
-                    logger.debug(f'If condition inside find_predecessor({identifier % 100}) on server: '
-                                 f'{self.identifier % 100}\n\t'
-                                 f'iteration {i} yielded that responsible node is: {n_prime.ft[i].node[1]}')
-                    n_prime = rpyc.connect(n_prime.ft[i].node[1], config.PORT).root
-                    # return n_prime
-                    # n_primer = n_prime.ft[i].node
+            n_prime = n_prime.closest_preceding_finger(identifier)
         else:
             logger.debug(f'Else of while of find_predecessor({identifier % 100}) on server: {self.identifier % 100}')
 
         # Found predecessor
         logger.debug(f'End of find_predecessor({identifier % 100}) on server: {self.identifier % 100}')
         return n_prime
+
+    # return closest preceding finger (id, ip)
+    def closest_preceding_finger(self, identifier):
+        for i in range(len(self.ft) - 1, 0, -1):
+            if inbetween(self.identifier + 1, identifier - 1, self.ft[i].node[0]):
+                # Found node responsible for next iteration
+                # Here, we should make a remote call
+                logger.debug(f'If condition inside closest_preceding_finger({identifier % 100}) on server: '
+                             f'{self.identifier % 100}\n\t'
+                             f'index {i} yielded that responsible node is: {self.ft[i].node[1]}')
+                n_prime = rpyc.connect(self.ft[i].node[1], config.PORT).root
+                return n_prime
+                # n_primer = n_prime.ft[i].node
+        return self
 
     # # node n joins the network;
     # # n' is an arbitrary node in the network
