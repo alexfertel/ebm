@@ -248,29 +248,29 @@ class EBMS(rpyc.Service):
 
 
 if __name__ == "__main__":
-    from rpyc.utils.server import ForkingServer
+    from rpyc.utils.server import ThreadedServer
     import sys
 
     # print(len(sys.argv))
 
     if len(sys.argv) < 2:
         print('Usage: ./server.py <email_address> <ip_address>')
-        logger.debug(f'Initializing ForkingServer with default values: a.fertel@correo.estudiantes.matcom.uh.cu'
+        logger.debug(f'Initializing ThreadedServer with default values: a.fertel@correo.estudiantes.matcom.uh.cu'
                      f' and 10.6.98.49.')
-        t = ForkingServer(EBMS(), port=config.PORT)
-        # t = ForkingServer(MyService, port=config.PORT)
+        t = ThreadedServer(EBMS(), port=config.PORT)
+        # t = ThreadedServer(MyService, port=config.PORT)
     elif len(sys.argv) == 2:
-        logger.debug(f'Initializing ForkingServer with default email address: a.fertel@correo.estudiantes.matcom.uh.cu'
+        logger.debug(f'Initializing ThreadedServer with default email address: a.fertel@correo.estudiantes.matcom.uh.cu'
                      f' and ip address: {sys.argv[1]}')
-        t = ForkingServer(EBMS(ip_addr=sys.argv[1]), port=config.PORT)
+        t = ThreadedServer(EBMS(ip_addr=sys.argv[1]), port=config.PORT)
     elif len(sys.argv) == 3:
-        logger.debug(f'Initializing ForkingServer with default email address: a.fertel@correo.estudiantes.matcom.uh.cu'
+        logger.debug(f'Initializing ThreadedServer with default email address: a.fertel@correo.estudiantes.matcom.uh.cu'
                      f' and ip address: {sys.argv[1]}')
-        t = ForkingServer(EBMS(sys.argv[1], sys.argv[2]), port=config.PORT)
+        t = ThreadedServer(EBMS(sys.argv[1], sys.argv[2]), port=config.PORT)
     else:
-        logger.debug(f'Initializing ForkingServer with email address: {sys.argv[1]}, join address: {sys.argv[2]}'
+        logger.debug(f'Initializing ThreadedServer with email address: {sys.argv[1]}, join address: {sys.argv[2]}'
                      f' and ip address: {sys.argv[3]}')
-        t = ForkingServer(EBMS(sys.argv[1], sys.argv[2], sys.argv[3]), port=config.PORT)
-        # t = ForkingServer(MyService, port=config.PORT)
+        t = ThreadedServer(EBMS(sys.argv[1], sys.argv[2], sys.argv[3]), port=config.PORT)
+        # t = ThreadedServer(MyService, port=config.PORT)
 
     t.start()
