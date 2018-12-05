@@ -26,7 +26,7 @@ class Finger:
 
 
 class EBMS(rpyc.Service):
-    def __init__(self, server_email_addr: str, join_addr: str = None):
+    def __init__(self, server_email_addr: str = 'a.fertel@estudiantes.matcom.uh.cu', join_addr: str = None):
         # Chord node setup
         self.__id = int(hashlib.sha1(str(server_email_addr).encode()).hexdigest(), 16)
         # Compute Finger Table computable properties (start, interval).
@@ -170,7 +170,7 @@ if __name__ == "__main__":
         print('Usage: ./server.py <email_address> <ip_address>')
         logger.debug(f'Initializing ThreadedServer with default values: ebm@correo.estudiantes.matcom.uh.cu'
                      f' and 10.6.98.49.')
-        t = ThreadedServer(EBMS(sys.argv[1], sys.argv[2]), port=config.PORT, protocol_config={
+        t = ThreadedServer(EBMS(), port=config.PORT, protocol_config={
             'allow_public_attrs': True,
         })
         # t = ThreadedServer(MyService, port=config.PORT)
