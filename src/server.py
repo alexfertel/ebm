@@ -110,9 +110,9 @@ class EBMS(rpyc.Service):
             return self.exposed_identifier(), self.ip
 
         while not inbetween(n_prime[0] + 1, succ[0] + 1, exposed_identifier):
-            logger.debug(
-                f'While condition inside exposed_find_predecessor({exposed_identifier}) on server: {self.exposed_identifier() % config.SIZE}\n\t'
-                f'n_prime.exposed_identifier(): {n_prime.exposed_identifier()}\tn_prime.exposed_successor():{n_prime.exposed_successor().exposed_identifier()}')
+            # logger.debug(
+            #     f'While condition inside exposed_find_predecessor({exposed_identifier}) on server: {self.exposed_identifier() % config.SIZE}\n\t'
+            #     f'n_prime.exposed_identifier(): {n_prime.exposed_identifier()}\tn_prime.exposed_successor():{n_prime.exposed_successor().exposed_identifier()}')
             # compute closest finger preceding id
             n_prime = self.remote_request(n_prime[1], 'closest_preceding_finger', exposed_identifier)
             # n_prime = n_prime.exposed_closest_preceding_finger(exposed_identifier)
