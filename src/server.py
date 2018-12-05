@@ -10,6 +10,7 @@ import json
 
 from dht import DHT
 from utils import inbetween
+from decorators import retry
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('SERVER')
@@ -112,6 +113,7 @@ class EBMS(rpyc.Service, DHT):
 
     # periodically verify n's immediate succesor,
     # and tell the successor about n.
+    @retry(3)
     def stabilize(self):
         logger.debug(f'Stabilizing on server: {self.identifier}')
         n_prime = rpyc.connect(self.ft[1].node[1], config.PORT).root
@@ -129,6 +131,7 @@ class EBMS(rpyc.Service, DHT):
             # self.ft[0].node[1] = self.ip  # FIXME I think this will be missing
 
     # periodically refresh finger table entries
+    @retry(2)
     def fix_fingers(self):
         logger.debug(f'Fixing fingers on server: {self.identifier}')
         if len(self.ft) > 2:
