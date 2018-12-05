@@ -146,7 +146,7 @@ class EBMS(rpyc.Service):
 
         logger.debug(f'Successor of node: {self.identifier} is {self.ft[1].node}')
         logger.debug(f'Predecessor of node: {self.identifier} is {self.ft[0].node}')
-        logger.debug(f'Finger Table values of node: {self.identifier} are {self.ft.values()}')
+        logger.debug(f'Finger Table values of node: {self.identifier} are {self.ft}')
         logger.debug(f'Successful join of node: {self.identifier} to chord')
 
         logger.debug(f'Starting stabilization of node: {self.identifier}')
