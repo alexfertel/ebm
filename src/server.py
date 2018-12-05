@@ -90,9 +90,11 @@ class EBMS(rpyc.Service):
         logger.debug(f'Calling find_predecessor({identifier % 100}) on server: {self.identifier % 100}')
         n_prime = self
         # compute closest finger preceding id
-        logger.debug(f'While condition inside find_predecessor({identifier % 100}) on server: {self.identifier % 100}\n\t'
-                     f'n_prime.identifier: {n_prime.identifier}\tn_prime.successor:{n_prime.successor.identifier}')
+        if n_prime.successor.identifier == self.identifier:
+            return self
         while not (n_prime.identifier < identifier <= n_prime.successor.identifier):
+            logger.debug(f'While condition inside find_predecessor({identifier % 100}) on server: {self.identifier % 100}\n\t'
+                         f'n_prime.identifier: {n_prime.identifier}\tn_prime.successor:{n_prime.successor.identifier}')
             n_prime = n_prime.closest_preceding_finger(identifier)
         else:
             logger.debug(f'Else of while of find_predecessor({identifier % 100}) on server: {self.identifier % 100}')
@@ -124,7 +126,7 @@ class EBMS(rpyc.Service):
 
             print(n_prime_addr)
             n_prime = rpyc.connect(n_prime_addr, config.PORT).root
-            print(n_prime.ft)
+            # print(n_prime.ft)
 
             self.ft[1] = n_prime.find_successor(self.identifier)
         else:  # n is the only node in the network
