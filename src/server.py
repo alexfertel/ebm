@@ -57,6 +57,11 @@ class EBMS(rpyc.Service):
         self.join(join_addr)  # Join chord
         logger.debug(f'Ended join of server: {self.exposed_identifier()}')
 
+        logger.debug(f'Starting stabilization of node: {self.exposed_identifier()}')
+        self.stabilize()
+        logger.debug(f'Start fixing fingers of node: {self.exposed_identifier()}')
+        self.fix_fingers()
+
     def remote_request(self, ip, method, *args):
         m = None
         ans = None
@@ -94,14 +99,16 @@ class EBMS(rpyc.Service):
         # return node
 
     def exposed_find_successor(self, exposed_identifier):
-        logger.debug(f'Calling exposed_find_successor({exposed_identifier % config.SIZE}) on server: {self.exposed_identifier() % config.SIZE}')
+        logger.debug(
+            f'Calling exposed_find_successor({exposed_identifier % config.SIZE}) on server: {self.exposed_identifier() % config.SIZE}')
 
         n_prime = self.exposed_find_predecessor(exposed_identifier)
         return self.remote_request(n_prime.node[1], 'successor')
         # return n_prime.exposed_successor()
 
     def exposed_find_predecessor(self, exposed_identifier):
-        logger.debug(f'Calling exposed_find_predecessor({exposed_identifier % config.SIZE}) on server: {self.exposed_identifier() % config.SIZE}')
+        logger.debug(
+            f'Calling exposed_find_predecessor({exposed_identifier % config.SIZE}) on server: {self.exposed_identifier() % config.SIZE}')
         n_prime = Finger(self.exposed_identifier(), self.ip)
         succ = self.exposed_successor()
 
@@ -121,7 +128,8 @@ class EBMS(rpyc.Service):
                 f'Else of while of exposed_find_predecessor({exposed_identifier % config.SIZE}) on server: {self.exposed_identifier() % config.SIZE}')
 
         # Found exposed_predecessor
-        logger.debug(f'End of exposed_find_predecessor({exposed_identifier % config.SIZE}) on server: {self.exposed_identifier() % config.SIZE}')
+        logger.debug(
+            f'End of exposed_find_predecessor({exposed_identifier % config.SIZE}) on server: {self.exposed_identifier() % config.SIZE}')
         return n_prime
 
     # return closest preceding finger (id, ip)
@@ -131,9 +139,10 @@ class EBMS(rpyc.Service):
             if inbetween(self.exposed_identifier() + 1, exposed_identifier - 1, self.ft[i].node[0]):
                 # Found node responsible for next iteration
                 # Here, we should make a remote call
-                logger.debug(f'If condition inside exposed_closest_preceding_finger({exposed_identifier % config.SIZE}) on server: '
-                             f'{self.exposed_identifier() % config.SIZE}\n\t'
-                             f'index {i} yielded that responsible node is: {self.ft[i].node[1]}')
+                logger.debug(
+                    f'If condition inside exposed_closest_preceding_finger({exposed_identifier % config.SIZE}) on server: '
+                    f'{self.exposed_identifier() % config.SIZE}\n\t'
+                    f'index {i} yielded that responsible node is: {self.ft[i].node[1]}')
 
                 # n_prime = rpyc.connect(self.ft[i].node[1], config.PORT).root
                 return self.ft[i]
@@ -161,29 +170,20 @@ class EBMS(rpyc.Service):
             self.ft[1].node[0] = self.exposed_identifier()
             self.ft[1].node[1] = self.ip
             # for i in range(1, config.MAX_BITS + 1):
-            # FIXME Rebuild the image to add this line
             # self.ft[i].node[0] = self.exposed_identifier()
             # self.ft[i].node[1] = self.ip
-            logger.debug(f'exposed_successor of the first node of the network {self.ft[1].node}')
-            logger.debug(f'exposed_predecessor of the first node of the network {self.ft[0]}')
+            # logger.debug(f'exposed_successor of the first node of the network {self.ft[1].node}')
+            # logger.debug(f'exposed_predecessor of the first node of the network {self.ft[0]}')
 
-        logger.debug(f'exposed_successor of node: {self.exposed_identifier()} is {self.ft[1].node}')
-        logger.debug(
-            f'exposed_predecessor of node: {self.exposed_identifier()} is {self.ft[0].node if self.ft[0] != "unknown" else self.ft[0]}')
-        logger.debug(f'Finger Table values of node: {self.exposed_identifier()} are {self.ft}')
+        # logger.debug(f'exposed_successor of node: {self.exposed_identifier()} is {self.ft[1]}')
+        # logger.debug(f'Finger Table values of node: {self.exposed_identifier()} are {self.ft}')
         logger.debug(f'Successful join of node: {self.exposed_identifier()} to chord')
-
-        logger.debug(f'Starting stabilization of node: {self.exposed_identifier()}')
-        self.stabilize()
-        logger.debug(f'Start fixing fingers of node: {self.exposed_identifier()}')
-        self.fix_fingers()
 
     # periodically verify n's immediate succesor,
     # and tell the exposed_successor about n.
-    @retry(3)
+    @retry(10)
     def stabilize(self):
         logger.debug(f'\nStabilizing on server: {self.exposed_identifier() % config.SIZE}\n')
-        logger.debug(f'self.ft[1].node[1]: {self.ft[1].node[1]}\n')
 
         succ = self.exposed_successor()
 
@@ -205,13 +205,14 @@ class EBMS(rpyc.Service):
         logger.debug(f'Notifying on server: {self.exposed_identifier() % config.SIZE}')
         # logger.debug(f'{self.ft[0]}')
 
-        if self.ft[0] == 'unknown' or inbetween(self.ft[0].node[0] + 1, self.exposed_identifier() - 1, n_prime_key_addr[0]):
+        if self.ft[0] == 'unknown' or inbetween(self.ft[0].node[0] + 1, self.exposed_identifier() - 1,
+                                                n_prime_key_addr[0]):
             self.ft[0] = Finger(*n_prime_key_addr)
             # self.ft[0].node[0] = n_prime_key_addr[0]
             # self.ft[0].node[1] = n_prime_key_addr[1]
 
     # periodically refresh finger table entries
-    @retry(2)
+    @retry(7)
     def fix_fingers(self):
         logger.debug(f'Fixing fingers on server: {self.exposed_identifier() % config.SIZE}')
         if config.MAX_BITS + 1 > 2:
