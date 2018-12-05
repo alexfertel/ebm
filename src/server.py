@@ -94,7 +94,7 @@ class EBMS(rpyc.Service):
             return self
         while not (n_prime.identifier < identifier <= n_prime.successor.identifier):
             logger.debug(
-                f'While condition inside find_predecessor({identifier % 100}) on server: {self.identifier % 100}\n\t'
+                f'While condition inside find_predecessor({identifier}) on server: {self.identifier % 100}\n\t'
                 f'n_prime.identifier: {n_prime.identifier}\tn_prime.successor:{n_prime.successor.identifier}')
             n_prime = n_prime.closest_preceding_finger(identifier)
         else:
@@ -107,6 +107,7 @@ class EBMS(rpyc.Service):
     # return closest preceding finger (id, ip)
     def closest_preceding_finger(self, identifier):
         for i in range(len(self.ft) - 1, 0, -1):
+            logger.debug(f'inbetween({self.identifier + 1, identifier - 1, self.ft[i].node[0]})')
             if inbetween(self.identifier + 1, identifier - 1, self.ft[i].node[0]):
                 # Found node responsible for next iteration
                 # Here, we should make a remote call
@@ -116,6 +117,8 @@ class EBMS(rpyc.Service):
                 n_prime = rpyc.connect(self.ft[i].node[1], config.PORT).root
                 return n_prime
                 # n_primer = n_prime.ft[i].node
+        else:
+            logger.debug(f'Did not enter inbetween if')
         return self
 
     # # node n joins the network;
