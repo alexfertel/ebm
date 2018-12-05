@@ -7,6 +7,7 @@ import random
 import hashlib
 import logging
 import json
+import copy
 
 from utils import inbetween
 from decorators import retry
@@ -80,7 +81,7 @@ class EBMS(rpyc.Service):
 
     def exposed_successor(self):
         logger.debug(f'Calling exposed_successor on server: {self.exposed_identifier() % config.SIZE}')
-        return self.ft[1]
+        return copy.copy(self.ft[1])
 
         # node = rpyc.connect(self.ft[1].node[1], config.PORT).root if self.ft[1].node[0] != self.exposed_identifier() else self
         # logger.debug(f'exposed_successor on server: {self.exposed_identifier() % config.SIZE} yielded {node.exposed_identifier()}')
@@ -88,7 +89,7 @@ class EBMS(rpyc.Service):
 
     def exposed_predecessor(self):
         logger.debug(f'Calling exposed_predecessor on server: {self.exposed_identifier() % config.SIZE}')
-        return self.ft[0]
+        return copy.copy(self.ft[0])
         # if self.ft[0] == 'unknown':
         #     return self
 
