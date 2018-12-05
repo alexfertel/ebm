@@ -128,7 +128,7 @@ class EBMS(rpyc.Service):
             n_prime = rpyc.connect(n_prime_addr, config.PORT).root
             # print(n_prime.ft)
 
-            self.ft[1] = n_prime.find_successor(self.identifier)
+            self.ft[1].node = n_prime.find_successor(self.identifier)
         else:  # n is the only node in the network
             logger.debug(f'First node of the network -> server: {self.identifier}')
             for i in range(len(self.ft)):
