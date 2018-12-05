@@ -6,6 +6,7 @@ import config
 import random
 import hashlib
 import logging
+import json
 
 from dht import DHT
 from utils import inbetween
@@ -40,6 +41,10 @@ class EBMS(rpyc.Service, DHT):
             self.ft[i].interval = self.ft[i].start, self.ft[i + 1].start
 
         self.ft[0] = Finger()  # At first the predecessor is unknown
+
+        # Init data file
+        with open('data.json', 'w+') as fd:
+            fd.write('{}')
 
         # Map between nodes and their addresses
         self.nodeSet = {}
@@ -131,47 +136,27 @@ class EBMS(rpyc.Service, DHT):
             i = random.randint(2, len(self.ft))
             self.finger[i].node = self.find_successor(self.ft[i].start)
 
-    # # node n joins the network;
-    # # n' is an arbitrary node in the network
-    # def join(self, n_prime_addr: str = None):
-    #     if n_prime_addr:
-    #         n_prime = rpyc.connect(n_prime_addr, config.PORT).root
+    def get(self, key):
+        node = self.find_successor(key)
+        return node.load()[key]
 
-    #         self.init_finger_table(n_prime)
-    #         self.update_others()
-    #         # move keys in (predecessor, n] from successor
-    #     else:  # n is the only node in the network
-    #         for i in range(len(self.ft)):
-    #             self.ft[i].node = self.identifier
+    def set(self, key, value):
+        node = self.find_successor(key)
+        dictionary = node.load()
+        dictionary[key] = value
+        node.save(dictionary)
 
-    # # initialize finger table of local node
-    # # n' is an arbitrary node already in the network
-    # def init_finger_table(self, n_prime):
-    #     self.ft[1].node = n_prime.find_successor(self.ft[1].start).identifier
-    #     successor = self.successor
-    #     self.ft[0].node = successor.predecessor.identifier
-    #     successor.ft[0].node = self.identifier
+    def save(self, dictionary: dict):
+        with open('data.json', 'w+') as fd:
+            json.dump(dictionary, fd)
 
-    #     for i in range(1, config.MAX_BITS):
-    #         if inbetween(self.id, self.ft[i].node - 1, self.ft[i + 1].start):
-    #             self.ft[i + 1].node = self.ft[i].node
-    #         else:
-    #             self.ft[i + 1].node = n_prime.find_successor(self.ft[i + 1].start).identifier
+    def load(self):
+        with open('data.json', 'r+') as fd:
+            return json.load(fd)
 
-    # # update all nodes whose finger
-    # # tables should refer to n
-    # def update_others(self):
-    #     for i in range(1, config.MAX_BITS + 1):
-    #         # find last node p whose ith finger might be n
-    #         p = self.find_predecessor(self.identifier - 2 ** (i - 1))
-    #         p.update_finger_table(self.identifier, i)
-
-    # # if s is ith finger of n, update n's finger table with s
-    # def update_finger_table(self, s, i):
-    #     if inbetween(self.identifier, self.ft[i].node - 1, s):
-    #         self.ft[i].node = s
-    #         p = self.predecessor  # get first node preceding n
-    #         p.update_finger_table(s, i)
+    # This should move keys to a new node and delete them
+    def move(self):
+        pass
 
 
 if __name__ == "__main__":
@@ -194,4 +179,3 @@ if __name__ == "__main__":
         })
         # t = ThreadedServer(MyService, port=config.PORT)
         t.start()
-
