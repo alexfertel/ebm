@@ -178,7 +178,7 @@ class EBMS(rpyc.Service):
         logger.debug(f'Notifying on server: {self.identifier % config.SIZE}')
         # logger.debug(f'{self.ft[0]}')
         if self.ft[0] == 'unknown' or inbetween(self.ft[0].node[0] + 1, self.identifier - 1, n_prime_key_addr[0]):
-            self.ft[0] = list(n_prime_key_addr)
+            self.ft[0] = Finger(*n_prime_key_addr)
             # self.ft[0].node[0] = n_prime_key_addr[0]
             # self.ft[0].node[1] = n_prime_key_addr[1]
 
@@ -189,6 +189,10 @@ class EBMS(rpyc.Service):
         if config.MAX_BITS + 1 > 2:
             i = random.randint(2, config.MAX_BITS)
             node = self.find_successor(self.identifier + 2 ** (i - 1))
+
+            assert isinstance(node, EBMS), 'node in fix_finger method is not an EBMS'
+            assert isinstance(node.identifier, int), 'node.identifier in fix_finger method is not an integer'
+            assert isinstance(node.ip, str), 'node.ip in fix_finger method is not a string'
             self.ft[i].node[0] = node.identifier
             self.ft[i].node[1] = node.ip
 
