@@ -216,9 +216,16 @@ if __name__ == "__main__":
         t = ThreadedServer(EBMS(ip_addr=sys.argv[1]), port=config.PORT, protocol_config={
             'allow_public_attrs': True,
         })
-    else:
-        logger.debug(f'Initializing ThreadedServer with email address: {sys.argv[1]} and join address: {sys.argv[2]}')
+    elif len(sys.argv) == 3:
+        logger.debug(f'Initializing ThreadedServer with default email address: a.fertel@correo.estudiantes.matcom.uh.cu'
+                     f' and ip address: {sys.argv[1]}')
         t = ThreadedServer(EBMS(sys.argv[1], sys.argv[2]), port=config.PORT, protocol_config={
+            'allow_public_attrs': True,
+        })
+    else:
+        logger.debug(f'Initializing ThreadedServer with email address: {sys.argv[1]}, join address: {sys.argv[2]}'
+                     f' and ip address: {sys.argv[3]}')
+        t = ThreadedServer(EBMS(sys.argv[1], sys.argv[2], sys.argv[3]), port=config.PORT, protocol_config={
             'allow_public_attrs': True,
         })
         # t = ThreadedServer(MyService, port=config.PORT)
