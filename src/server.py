@@ -26,7 +26,9 @@ class Finger:
 
 
 class EBMS(rpyc.Service):
-    def __init__(self, server_email_addr: str = 'a.fertel@estudiantes.matcom.uh.cu', join_addr: str = None):
+    def __init__(self, server_email_addr: str = 'a.fertel@estudiantes.matcom.uh.cu',
+                 join_addr: str = None,
+                 ip_addr: str = None):
         # Chord node setup
         self.__id = int(hashlib.sha1(str(server_email_addr).encode()).hexdigest(), 16)
         # Compute Finger Table computable properties (start, interval).
@@ -48,9 +50,12 @@ class EBMS(rpyc.Service):
 
         logger.debug(f'Capture ip address of self on server: {self.identifier % 100}')
         # Sets this server's ip address correctly :) Thanks stackoverflow!
-        self.ip = (([ip for ip in socket.gethostbyname_ex(socket.gethostname())[2] if not ip.startswith("127.")]
-                    or [[(s.connect(("8.8.8.8", 53)), s.getsockname()[0], s.close()) for s in
-                         [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]]) + ["no IP found"])[0]
+        if not ip_addr:
+            self.ip = (([ip for ip in socket.gethostbyname_ex(socket.gethostname())[2] if not ip.startswith("127.")]
+                        or [[(s.connect(("8.8.8.8", 53)), s.getsockname()[0], s.close()) for s in
+                             [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]]) + ["no IP found"])[0]
+        else:
+            self.ip = ip_addr
 
         logger.debug(f'Ip address of self on server: {self.identifier} is: {self.ip}')
 
@@ -75,16 +80,17 @@ class EBMS(rpyc.Service):
         return node
 
     def find_successor(self, identifier):
-        logger.debug(f'Calling find_successor({identifier}) on server: {self.identifier % 100}')
+        logger.debug(f'Calling find_successor({identifier % 100}) on server: {self.identifier % 100}')
         n_prime = self.find_predecessor(identifier)
         return n_prime.successor
 
     def find_predecessor(self, identifier):
-        logger.debug(f'Calling find_predecessor({identifier}) on server: {self.identifier % 100}')
+        logger.debug(f'Calling find_predecessor({identifier % 100}) on server: {self.identifier % 100}')
         n_prime = self
         # compute closest finger preceding id
-        logger.debug(f'Condition inside find_predecessor({identifier}) on server: {self.identifier % 100}')
-        while not (n_prime.identifier < identifier <= n_prime.successor):
+        logger.debug(f'Condition inside find_predecessor({identifier % 100}) on server: {self.identifier % 100}\n\t\t'
+                     f'n_prime.identifier: {n_prime.identifier}\tn_prime.successor:{n_prime.successor.identifier}')
+        while not (n_prime.identifier < identifier <= n_prime.successor.identifier):
             for i in range(len(n_prime.ft) - 1, 0, -1):
                 if inbetween(n_prime.ft[i].interval[0] + 1, n_prime.ft[i].interval[1] + 1, identifier):
                     # Found node responsible for next iteration
@@ -168,8 +174,9 @@ class EBMS(rpyc.Service):
 if __name__ == "__main__":
     from rpyc.utils.server import ThreadedServer
     import sys
+    # print(len(sys.argv))
 
-    if len(sys.argv) < 3:
+    if len(sys.argv) < 2:
         print('Usage: ./server.py <email_address> <ip_address>')
         logger.debug(f'Initializing ThreadedServer with default values: a.fertel@correo.estudiantes.matcom.uh.cu'
                      f' and 10.6.98.49.')
@@ -177,11 +184,17 @@ if __name__ == "__main__":
             'allow_public_attrs': True,
         })
         # t = ThreadedServer(MyService, port=config.PORT)
-        t.start()
+    elif len(sys.argv) == 2:
+        logger.debug(f'Initializing ThreadedServer with default email address: a.fertel@correo.estudiantes.matcom.uh.cu'
+                     f' and ip address: {sys.argv[1]}')
+        t = ThreadedServer(EBMS(ip_addr=sys.argv[1]), port=config.PORT, protocol_config={
+            'allow_public_attrs': True,
+        })
     else:
         logger.debug(f'Initializing ThreadedServer with email address: {sys.argv[1]} and join address: {sys.argv[2]}')
         t = ThreadedServer(EBMS(sys.argv[1], sys.argv[2]), port=config.PORT, protocol_config={
             'allow_public_attrs': True,
         })
         # t = ThreadedServer(MyService, port=config.PORT)
-        t.start()
+
+    t.start()
