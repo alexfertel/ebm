@@ -98,14 +98,18 @@ class EBMS(rpyc.Service):
                     n_prime = rpyc.connect(n_prime.ft[i].node[1], config.PORT).root
 
                     # n_primer = n_prime.ft[i].node
+        else:
+            logger.debug(f'Else of while of find_predecessor({identifier % 100}) on server: {self.identifier % 100}')
+
         # Found predecessor
+        logger.debug(f'End of find_predecessor({identifier % 100}) on server: {self.identifier % 100}')
         return n_prime
 
     # # node n joins the network;
     # # n' is an arbitrary node in the network
     def join(self, n_prime_addr):
         if n_prime_addr:
-            logger.debug(f'Joining network -> server: {self.identifier}')
+            logger.debug(f'Joining network to the node {n_prime_addr} -> server: {self.identifier}')
             self.ft[0].node[0] = -1
 
             print(n_prime_addr)
@@ -118,6 +122,8 @@ class EBMS(rpyc.Service):
                 # FIXME Rebuild the image to add this line
                 self.ft[i].node[0] = self.identifier
                 self.ft[i].node[1] = self.ip
+            logger.debug(f'Successor of the first node of the network {self.ft[1].node}')
+            logger.debug(f'Predecessor of the first node of the network {self.ft[0].node}')
 
     # periodically verify n's immediate succesor,
     # and tell the successor about n.
@@ -174,6 +180,7 @@ class EBMS(rpyc.Service):
 if __name__ == "__main__":
     from rpyc.utils.server import ThreadedServer
     import sys
+
     # print(len(sys.argv))
 
     if len(sys.argv) < 2:
