@@ -71,12 +71,14 @@ class EBMS(rpyc.Service):
     def successor(self):
         logger.debug(f'Calling successor on server: {self.identifier % 100}')
         node = rpyc.connect(self.ft[1].node[1], config.PORT).root
+        logger.debug(f'Successor on server: {self.identifier % 100} yielded {node.identifier}')
         return node
 
     @property
     def predecessor(self):
         logger.debug(f'Calling predecessor on server: {self.identifier % 100}')
         node = rpyc.connect(self.ft[0].node[1], config.PORT).root
+        logger.debug(f'Predecessor on server: {self.identifier % 100} yielded {node.identifier}')
         return node
 
     def find_successor(self, identifier):
@@ -88,7 +90,7 @@ class EBMS(rpyc.Service):
         logger.debug(f'Calling find_predecessor({identifier % 100}) on server: {self.identifier % 100}')
         n_prime = self
         # compute closest finger preceding id
-        logger.debug(f'While condition inside find_predecessor({identifier % 100}) on server: {self.identifier % 100}\n\t\t'
+        logger.debug(f'While condition inside find_predecessor({identifier % 100}) on server: {self.identifier % 100}\n\t'
                      f'n_prime.identifier: {n_prime.identifier}\tn_prime.successor:{n_prime.successor.identifier}')
         while not (n_prime.identifier < identifier <= n_prime.successor.identifier):
             for i in range(len(n_prime.ft) - 1, 0, -1):
@@ -96,7 +98,8 @@ class EBMS(rpyc.Service):
                     # Found node responsible for next iteration
                     # Here, we should make a remote call
                     logger.debug(f'If condition inside find_predecessor({identifier % 100}) on server: '
-                                 f'{self.identifier % 100}\n\t\t')
+                                 f'{self.identifier % 100}\n\t'
+                                 f'iteration {i} yielded that responsible node is: {n_prime.ft[i].node[1]}')
                     n_prime = rpyc.connect(n_prime.ft[i].node[1], config.PORT).root
                     return n_prime
                     # n_primer = n_prime.ft[i].node
