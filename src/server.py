@@ -65,7 +65,7 @@ class EBMS(rpyc.Service):
     def successor(self):
         logger.debug(f'Calling successor on server: {self.identifier % config.SIZE}')
         node = rpyc.connect(self.ft[1].node[1], config.PORT).root if self.ft[1].node[0] != self.identifier else self
-        logger.debug(f'Successor on server: {self.identifier % config.SIZE} yielded {node.identifier}')
+        # logger.debug(f'Successor on server: {self.identifier % config.SIZE} yielded {node.identifier}')
         return node
 
     @property
@@ -74,10 +74,10 @@ class EBMS(rpyc.Service):
         if self.ft[0] == 'unknown':
             return self
 
-        logger.debug(f'Debugging error AttributeError: list object has no attribute node')
-        logger.debug(f'self.ft {self.ft} | self.identifier {self.identifier}')
+        # logger.debug(f'Debugging error AttributeError: list object has no attribute node')
+        # logger.debug(f'self.ft {self.ft} | self.identifier {self.identifier}')
         node = rpyc.connect(self.ft[0].node[1], config.PORT).root if self.ft[0].node[0] != self.identifier else self
-        logger.debug(f'Predecessor on server: {self.identifier % config.SIZE} yielded {node.identifier}')
+        # logger.debug(f'Predecessor on server: {self.identifier % config.SIZE} yielded {node.identifier}')
         return node
 
     def find_successor(self, identifier):
@@ -88,13 +88,15 @@ class EBMS(rpyc.Service):
     def find_predecessor(self, identifier):
         logger.debug(f'Calling find_predecessor({identifier % config.SIZE}) on server: {self.identifier % config.SIZE}')
         n_prime = self
-        # compute closest finger preceding id
-        if n_prime.successor.identifier == self.identifier:
+
+        succ = n_prime.successor
+        if succ.identifier == self.identifier:
             return self
         while not inbetween(n_prime.identifier + 1, n_prime.successor.identifier, identifier):
             logger.debug(
                 f'While condition inside find_predecessor({identifier}) on server: {self.identifier % config.SIZE}\n\t'
                 f'n_prime.identifier: {n_prime.identifier}\tn_prime.successor:{n_prime.successor.identifier}')
+            # compute closest finger preceding id
             n_prime = n_prime.closest_preceding_finger(identifier)
         else:
             logger.debug(
