@@ -8,7 +8,6 @@ import hashlib
 import logging
 import json
 
-from dht import DHT
 from utils import inbetween
 from decorators import retry
 
