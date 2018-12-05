@@ -164,8 +164,8 @@ class EBMS(rpyc.Service):
         logger.debug(f'\nStabilizing on server: {self.identifier % config.SIZE}\n')
         logger.debug(f'self.ft[1].node[1]: {self.ft[1].node[1]}\n')
         n_prime = rpyc.connect(self.ft[1].node[1], config.PORT).root if self.ft[1].node[0] != self.identifier else self
-        logger.debug(f'N_prime on stabilizing on server: {n_prime}\n')
-        logger.debug(f'succ(N_prime) on stabilizing on server: {n_prime.successor}\n')
+        # logger.debug(f'N_prime on stabilizing on server: {n_prime}\n')
+        # logger.debug(f'succ(N_prime) on stabilizing on server: {n_prime.successor}\n')
         x = n_prime.successor.predecessor
         # logger.debug(f'\nStabilizing on server: {self.identifier % config.SIZE}\n')
         if inbetween(self.identifier + 1, self.ft[1].node[0] - 1, x.identifier):
@@ -190,9 +190,9 @@ class EBMS(rpyc.Service):
             i = random.randint(2, config.MAX_BITS)
             node = self.find_successor(self.identifier + 2 ** (i - 1))
 
-            assert isinstance(node, EBMS), 'node in fix_finger method is not an EBMS'
-            assert isinstance(node.identifier, int), 'node.identifier in fix_finger method is not an integer'
-            assert isinstance(node.ip, str), 'node.ip in fix_finger method is not a string'
+            # assert isinstance(node, EBMS), 'node in fix_finger method is not an EBMS'
+            # assert isinstance(node.identifier, int), 'node.identifier in fix_finger method is not an integer'
+            # assert isinstance(node.ip, str), 'node.ip in fix_finger method is not a string'
             self.ft[i].node[0] = node.identifier
             self.ft[i].node[1] = node.ip
 
