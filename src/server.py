@@ -19,7 +19,7 @@ class Finger:
     def __init__(self, start: int = -1, interval: tuple = (-1, -1), node: list = None):
         self.start = start
         self.interval = interval
-        self.node = node if not node else [-1, '']
+        self.node = node if node else [-1, '']
 
     def __repr__(self):
         return f'start: {self.start}, interval: [{self.interval[0]}, {self.interval[1]}), node: {self.node}'
