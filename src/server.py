@@ -10,7 +10,6 @@ import json
 import copy
 import threading
 
-
 from utils import inbetween
 from decorators import retry
 
@@ -30,9 +29,9 @@ class EBMS(rpyc.Service):
     def __init__(self, server_email_addr: str = 'a.fertel@estudiantes.matcom.uh.cu',
                  join_addr: str = None,
                  ip_addr: str = None):
-        
+
         self.lock = threading.Lock()
-        
+
         # Chord node setup
         self.__id = int(hashlib.sha1(str(server_email_addr).encode()).hexdigest(), 16) % config.SIZE
         # Compute Finger Table computable properties (start, interval).
@@ -75,12 +74,10 @@ class EBMS(rpyc.Service):
             m = getattr(self, 'exposed_' + method)
             ans = m(*args)
         else:
-            self.lock.acquire()
             c = rpyc.connect(ip, config.PORT)
             m = getattr(c.root, method)
             ans = m(*args)
             c.close()
-            self.lock.release()
         return ans
 
     def exposed_identifier(self):
@@ -192,7 +189,7 @@ class EBMS(rpyc.Service):
     @retry(10)
     def stabilize(self):
         logger.debug(f'\nStabilizing on server: {self.exposed_identifier() % config.SIZE}\n')
-
+        self.lock.acquire()
         succ = self.exposed_successor()
 
         x = self.remote_request(succ.node[1], 'predecessor')
@@ -207,6 +204,7 @@ class EBMS(rpyc.Service):
 
         self.remote_request(self.exposed_successor().node[1], 'notify', (self.exposed_identifier(), self.ip))
         # n_prime.exposed_notify(tuple([self.exposed_identifier(), self.ip]))
+        self.lock.release()
 
     # n' thinks it might be our exposed_predecessor.
     def exposed_notify(self, n_prime_key_addr: tuple):
