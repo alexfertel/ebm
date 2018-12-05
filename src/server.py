@@ -19,6 +19,9 @@ class Finger:
     def __init__(self, identifier, ip):
         self.node = [identifier, ip]
 
+    def __repr__(self):
+        return f'(id: {self.node[0]} | ip: {self.node[1]})'
+
 
 class EBMS(rpyc.Service):
     def __init__(self, server_email_addr: str = 'a.fertel@estudiantes.matcom.uh.cu',
@@ -68,6 +71,9 @@ class EBMS(rpyc.Service):
     @property
     def predecessor(self):
         logger.debug(f'Calling predecessor on server: {self.identifier % config.SIZE}')
+        if self.ft[0] == 'unknown':
+            return self
+
         node = rpyc.connect(self.ft[0].node[1], config.PORT).root if self.ft[0].node[0] != self.identifier else self
         logger.debug(f'Predecessor on server: {self.identifier % config.SIZE} yielded {node.identifier}')
         return node
@@ -139,7 +145,8 @@ class EBMS(rpyc.Service):
             logger.debug(f'Predecessor of the first node of the network {self.ft[0]}')
 
         logger.debug(f'Successor of node: {self.identifier} is {self.ft[1].node}')
-        logger.debug(f'Predecessor of node: {self.identifier} is {self.ft[0].node if self.ft[0] == "unknown" else self.ft[0]}')
+        logger.debug(
+            f'Predecessor of node: {self.identifier} is {self.ft[0].node if self.ft[0] != "unknown" else self.ft[0]}')
         logger.debug(f'Finger Table values of node: {self.identifier} are {self.ft}')
         logger.debug(f'Successful join of node: {self.identifier} to chord')
 
@@ -163,17 +170,19 @@ class EBMS(rpyc.Service):
     # n' thinks it might be our predecessor.
     def notify(self, n_prime_key_addr: tuple):
         logger.debug(f'Notifying on server: {self.identifier % config.SIZE}')
-        if self.ft[0].node[0] == -1 or inbetween(self.ft[0].node[0] + 1, self.identifier - 1, n_prime_key_addr[0]):
-            self.ft[0].node[0] = n_prime_key_addr[0]
-            self.ft[0].node[1] = n_prime_key_addr[1]
+        # logger.debug(f'{self.ft[0]}')
+        if self.ft[0] == 'unknown' or inbetween(self.ft[0].node[0] + 1, self.identifier - 1, n_prime_key_addr[0]):
+            self.ft[0] = list(n_prime_key_addr)
+            # self.ft[0].node[0] = n_prime_key_addr[0]
+            # self.ft[0].node[1] = n_prime_key_addr[1]
 
     # periodically refresh finger table entries
     @retry(2)
     def fix_fingers(self):
         logger.debug(f'Fixing fingers on server: {self.identifier % config.SIZE}')
         if config.MAX_BITS + 1 > 2:
-            i = random.randint(2, config.MAX_BITS + 1 - 1)
-            node = self.find_successor(self.ft[i].start)
+            i = random.randint(2, config.MAX_BITS)
+            node = self.find_successor(self.identifier + 2 ** (i - 1))
             self.ft[i].node[0] = node.identifier
             self.ft[i].node[1] = node.ip
 
