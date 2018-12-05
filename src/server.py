@@ -17,7 +17,7 @@ logger = logging.getLogger('SERVER')
 
 class Finger:
     def __init__(self, identifier, ip):
-        self.node = (identifier, ip)
+        self.node = [identifier, ip]
 
 
 class EBMS(rpyc.Service):
