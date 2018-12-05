@@ -138,6 +138,10 @@ class EBMS(rpyc.Service):
             logger.debug(f'Successor of the first node of the network {self.ft[1].node}')
             logger.debug(f'Predecessor of the first node of the network {self.ft[0].node}')
 
+        logger.debug(f'Successor of node: {self.identifier} is {self.ft[1].node}')
+        logger.debug(f'Predecessor of node: {self.identifier} is {self.ft[0].node}')
+        logger.debug(f'Successful join of node: {self.identifier} to chord')
+
     # periodically verify n's immediate succesor,
     # and tell the successor about n.
     @retry(3)
