@@ -16,7 +16,7 @@ logger = logging.getLogger('SERVER')
 
 
 class Finger:
-    def __init__(self, start: int = -1, interval: tuple = (-1, -1), node: int = -1):
+    def __init__(self, start: int = -1, interval: tuple = (-1, -1), node: tuple = (-1, '')):
         self.start = start
         self.interval = interval
         self.node = node
@@ -46,9 +46,6 @@ class EBMS(rpyc.Service, DHT):
         with open('data.json', 'w+') as fd:
             fd.write('{}')
 
-        # Map between nodes and their addresses
-        self.nodeSet = {}
-
         logger.debug(f'Capture ip address of self on server: {self.identifier}')
         # Sets this server's ip address correctly :) Thanks stackoverflow!
         self.ip = (([ip for ip in socket.gethostbyname_ex(socket.gethostname())[2] if not ip.startswith("127.")]
@@ -66,13 +63,13 @@ class EBMS(rpyc.Service, DHT):
     @property
     def successor(self) -> int:
         logger.debug(f'Calling successor on server: {self.identifier}')
-        node = rpyc.connect(self.nodeSet[self.ft[1].node], config.PORT).root
+        node = rpyc.connect(self.ft[1].node[1], config.PORT).root
         return node
 
     @property
     def predecessor(self) -> int:
         logger.debug(f'Calling predecessor on server: {self.identifier}')
-        node = rpyc.connect(self.nodeSet[self.ft[0].node], config.PORT).root
+        node = rpyc.connect(self.ft[0].node[1], config.PORT).root
         return node
 
     def find_successor(self, identifier) -> str:
@@ -89,7 +86,7 @@ class EBMS(rpyc.Service, DHT):
                 if inbetween(n_prime.ft[i].interval[0] + 1, n_prime.ft[i].interval[1] + 1, identifier):
                     # Found node responsible for next iteration
                     # Here, we should make a remote call
-                    n_prime = rpyc.connect(self.nodeSet[n_prime.ft[i].node], config.PORT).root
+                    n_prime = rpyc.connect(n_prime.ft[i].node[1], config.PORT).root
 
                     # n_primer = n_prime.ft[i].node
         # Found predecessor
@@ -100,7 +97,7 @@ class EBMS(rpyc.Service, DHT):
     def join(self, n_prime_addr):
         if n_prime_addr:
             logger.debug(f'Joining network -> server: {self.identifier}')
-            self.ft[0].node = -1
+            self.ft[0].node[0] = -1
 
             print(n_prime_addr)
             n_prime = rpyc.connect(n_prime_addr, config.PORT).root
@@ -110,31 +107,35 @@ class EBMS(rpyc.Service, DHT):
             logger.debug(f'First node of the network -> server: {self.identifier}')
             for i in range(len(self.ft)):
                 # FIXME Rebuild the image to add this line
-                self.ft[i].node = self.identifier
-                self.nodeSet[self.identifier] = self.ip
+                self.ft[i].node[0] = self.identifier
+                self.ft[i].node[1] = self.ip
 
     # periodically verify n's immediate succesor,
     # and tell the successor about n.
     def stabilize(self):
         logger.debug(f'Stabilizing on server: {self.identifier}')
-        n_prime = rpyc.connect(self.nodeSet[self.ft[1].node], config.PORT).root
+        n_prime = rpyc.connect(self.ft[1].node[1], config.PORT).root
         x = n_prime.successor.predecessor
-        if inbetween(self.identifier + 1, self.ft[1].node - 1):
-            self.ft[1].node = x.identifier
+        if inbetween(self.identifier + 1, self.ft[1].node[0] - 1):
+            self.ft[1].node[0] = x.identifier
+            self.ft[1].node[1] = x.ip
         n_prime.notify(self.identifier)
 
     # n' thinks it might be our predecessor.
     def notify(self, n_prime):
         logger.debug(f'Notifying on server: {self.identifier}')
-        if self.ft[0] == 'unknown' or inbetween(self.ft[0].node + 1, self.identifier - 1, n_prime):
-            self.ft[0].node = n_prime
+        if self.ft[0] == 'unknown' or inbetween(self.ft[0].node[0] + 1, self.identifier - 1, n_prime):
+            self.ft[0].node[0] = n_prime
+            # self.ft[0].node[1] = self.ip  # FIXME I think this will be missing
 
     # periodically refresh finger table entries
     def fix_fingers(self):
         logger.debug(f'Fixing fingers on server: {self.identifier}')
         if len(self.ft) > 2:
             i = random.randint(2, len(self.ft))
-            self.finger[i].node = self.find_successor(self.ft[i].start)
+            node = self.find_successor(self.ft[i].start)
+            self.finger[i].node[0] = node.identifier
+            self.finger[i].node[1] = node.ip
 
     def get(self, key):
         node = self.find_successor(key)
