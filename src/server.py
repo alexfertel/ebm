@@ -1,14 +1,16 @@
 #!/usr/bin/env python3.6
-
 import config
+import fcntl
 import fire
 import hashlib
 import json
 import logging
+import pickle
 import random
 import rpyc
 import socket
 import string
+import struct
 
 from utils import inbetween
 from decorators import retry, retry_times
@@ -50,7 +52,7 @@ class EBMS(rpyc.Service):
         logger.debug(f'Ip address of self on server: {self.exposed_identifier()} is: {self.addr}')
 
         logger.debug(f'Starting join of server: {self.exposed_identifier()}')
-        self.join(join_addr)  # Join chord
+        self.exposed_join(join_addr)  # Join chord
         logger.debug(f'Ended join of server: {self.exposed_identifier()}')
 
     @retry_times(config.RETRY_ON_FAILURE_TIMES)
@@ -80,6 +82,7 @@ class EBMS(rpyc.Service):
     def exposed_identifier(self):
         return self.__id
 
+    # ##################################################### CHORD ######################################################
     def exposed_finger_table(self):
         return tuple(self.ft)
 
@@ -98,27 +101,27 @@ class EBMS(rpyc.Service):
         logger.debug(f'Calling exposed_predecessor on server: {self.exposed_identifier() % config.SIZE}')
         return self.ft[0]
 
-    def exposed_find_successor(self, exposed_identifier):
-        logger.debug(f'Calling exposed_find_successor({exposed_identifier % config.SIZE}) '
+    def exposed_find_successor(self, identifier):
+        logger.debug(f'Calling exposed_find_successor({identifier % config.SIZE}) '
                      f'on server: {self.exposed_identifier() % config.SIZE}')
 
-        if self.ft[0] != 'unknown' and inbetween(self.ft[0][0] + 1, self.exposed_identifier() + 1, exposed_identifier):
+        if self.ft[0] != 'unknown' and inbetween(self.ft[0][0] + 1, self.exposed_identifier(), identifier):
             return self.exposed_identifier(), self.addr
 
-        n_prime = self.exposed_find_predecessor(exposed_identifier)
+        n_prime = self.exposed_find_predecessor(identifier)
         return self.remote_request(n_prime[1], 'successor')
 
-    def exposed_find_predecessor(self, exposed_identifier):
+    def exposed_find_predecessor(self, identifier):
         logger.debug(
-            f'Calling exposed_find_predecessor({exposed_identifier % config.SIZE}) on server: {self.exposed_identifier() % config.SIZE}')
+            f'Calling exposed_find_predecessor({identifier % config.SIZE}) on server: {self.exposed_identifier() % config.SIZE}')
         n_prime = (self.exposed_identifier(), self.addr)
         succ = self.exposed_successor()
 
         if succ[0] == self.exposed_identifier():
             return self.exposed_identifier(), self.addr
 
-        while not inbetween(n_prime[0] + 1, succ[0] + 1, exposed_identifier):
-            n_prime = self.remote_request(n_prime[1], 'closest_preceding_finger', exposed_identifier)
+        while not inbetween(n_prime[0] + 1, succ[0] + 1, identifier):
+            n_prime = self.remote_request(n_prime[1], 'closest_preceding_finger', identifier)
         return n_prime
 
     # return closest preceding finger (id, ip)
@@ -131,7 +134,7 @@ class EBMS(rpyc.Service):
 
     # # n joins the network;
     # # n' is an arbitrary in the network
-    def join(self, n_prime_addr):
+    def exposed_join(self, n_prime_addr):
         if n_prime_addr:
             logger.debug(f'Joining network, connecting to  {n_prime_addr} -> server: {self.exposed_identifier()}')
             self.ft[0] = 'unknown'
@@ -180,6 +183,7 @@ class EBMS(rpyc.Service):
             i = random.randint(2, config.MAX_BITS)
             finger = self.exposed_find_successor(self.exposed_identifier() + 2 ** (i - 1))
             self.ft[i] = finger
+            logger.debug(f'Finger {i} on server: {self.exposed_identifier() % config.SIZE} is {self.ft[i]}')
 
     @retry(config.UPDATE_SUCCESSORS_DELAY)
     def update_successors(self):
@@ -194,24 +198,65 @@ class EBMS(rpyc.Service):
             successors += remote_successors
         self.successors = tuple(successors)
 
-    def get(self, key):
-        node = self.exposed_find_successor(key)
-        return node.load()[key]
+    # def am_i_online(self):
+    #     ifaces = ['eth0', 'wlan0']
+    #     connected = []
+    # 
+    #     i = 0
+    #     for ifname in ifaces:
+    #         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    #         try:
+    #             socket.inet_ntoa(fcntl.ioctl(
+    #                 s.fileno(),
+    #                 0x8915,  # SIOCGIFADDR
+    #                 struct.pack('256s', ifname[:15])
+    #             )[20:24])
+    #             connected.append(ifname)
+    #             # print "%s is connected" % ifname
+    #         except:
+    #             # print "%s is not connected" % ifname
+    #             pass
+    #         i += 1
+    # 
+    #     return connected
 
-    def set(self, key, value):
+    # ##################################################### DATA ######################################################
+    def exposed_get(self, key):
+        succ = self.exposed_find_successor(key)
+
+        if succ[1] == self.addr:  # I'm responsible for this key
+            obj = self.exposed_load_json()[key]
+            return self.exposed_dumps(pickle, obj)
+
+        return self.remote_request(succ[1], 'get', key)
+
+    def exposed_set(self, key, value):
         node = self.exposed_find_successor(key)
         dictionary = node.load()
         dictionary[key] = value
         node.save(dictionary)
 
-    def save(self, dictionary: dict):
+    def exposed_save_json(self, dictionary: dict):
         with open('data.json', 'w+') as fd:
-            json.dump(dictionary, fd)
+            self.exposed_dump(json, dictionary, fd)
 
-    def load(self):
+    def exposed_load_json(self):
         with open('data.json', 'r+') as fd:
-            return json.load(fd)
+            return self.exposed_load(json, fd)
 
+    def exposed_dump(self, serializer, obj, fd):
+        serializer.dump(obj, fd)
+
+    def exposed_dumps(self, serializer, obj):
+        return serializer.dumps(obj)
+
+    def exposed_load(self, serializer, fd):
+        return serializer.load(fd)
+
+    def exposed_loads(self, serializer, obj):
+        return serializer.loads(obj)
+
+    # ################################################## REPLICATION ###################################################
     # This should move keys to a new and delete them
     def move(self):
         pass
