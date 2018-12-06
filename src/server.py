@@ -29,7 +29,7 @@ class EBMS(rpyc.Service):
         # Active users
         self.active_users = []
 
-        self.server_info = User(self.__id, server_email_addr, user_email, pwd)
+        self.server_info = User(self.exposed_identifier(), server_email_addr, user_email, pwd)
 
         # Setup broker
         self.mta = Broker(server, self.server_info)
