@@ -53,8 +53,12 @@ class EBMS(rpyc.Service):
 
         logger.debug(f'Starting stabilization of: {self.exposed_identifier()}')
         self.stabilize()
+
         logger.debug(f'Start fixing fingers of: {self.exposed_identifier()}')
         self.fix_fingers()
+
+        logger.debug(f'Start updating successors of: {self.exposed_identifier()}')
+        self.update_successors()
 
     @retry_times(config.RETRY_ON_FAILURE_TIMES)
     def remote_request(self, addr, method, *args):
@@ -148,7 +152,7 @@ class EBMS(rpyc.Service):
         succ = self.exposed_successor()
         x = self.remote_request(succ[1], 'predecessor')
 
-        if x != 'unknown' and inbetween(self.exposed_identifier() + 1, succ[0] - 1, x[0]):
+        if x != 'unknown' and inbetween(self.exposed_identifier() + 1, succ[0] - 1, x[0]) and self.is_online(x[1]):
             self.ft[1] = x
 
         self.remote_request(self.exposed_successor()[1], 'notify', (self.exposed_identifier(), self.addr))
@@ -168,6 +172,19 @@ class EBMS(rpyc.Service):
             i = random.randint(2, config.MAX_BITS)
             finger = self.exposed_find_successor(self.exposed_identifier() + 2 ** (i - 1))
             self.ft[i] = finger
+
+    @retry(config.UPDATE_SUCCESSORS_DELAY)
+    def update_successors(self):
+        logging.debug('Updating successor list on server: {self.exposed_identifier() % config.SIZE}')
+        succ = self.exposed_successor()
+
+        if self.addr[1] == succ[1]:
+            return
+        successors = [succ]
+        remote_successors = list(self.remote_request(succ[1], 'exposed_get_successors'))[:config.SUCC_COUNT - 1]
+        if remote_successors:
+            successors += remote_successors
+        self.successors = tuple(successors)
 
     def get(self, key):
         node = self.exposed_find_successor(key)
@@ -195,6 +212,7 @@ class EBMS(rpyc.Service):
 if __name__ == "__main__":
     from rpyc.utils.server import ThreadedServer
     import sys
+
     # print(len(sys.argv))
     if len(sys.argv) < 2:
         print('Usage: ./server.py <email_address> <ip_address>')
