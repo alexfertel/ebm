@@ -102,7 +102,7 @@ class EBMS(rpyc.Service):
         logger.debug(f'Calling exposed_find_successor({exposed_identifier % config.SIZE}) '
                      f'on server: {self.exposed_identifier() % config.SIZE}')
 
-        if self.ft[0] and inbetween(self.ft[0][1] + 1, self.exposed_identifier() + 1, exposed_identifier):
+        if self.ft[0] != 'unknown' and inbetween(self.ft[0][1] + 1, self.exposed_identifier() + 1, exposed_identifier):
             return self.exposed_identifier(), self.addr
 
         n_prime = self.exposed_find_predecessor(exposed_identifier)
