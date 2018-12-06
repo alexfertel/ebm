@@ -214,7 +214,7 @@ class EBMS(rpyc.Service):
 def main(server_email_addr: str = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6)),
          join_addr: str = None,
          ip_addr: str = None):
-    t = ThreadedServer(EBMS(server_email_addr, join_addr, ip_addr))
+    t = ThreadedServer(EBMS(server_email_addr, join_addr, ip_addr), port=ip_addr[1] if ip_addr else config.PORT)
     t.start()
 
 
