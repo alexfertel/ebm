@@ -29,8 +29,10 @@ class EBMS(rpyc.Service):
         # Active users
         self.active_users = []
 
+        self.server_info = User(self.__id, server_email_addr, user_email, pwd)
+
         # Setup broker
-        self.mta = Broker(server)
+        self.mta = Broker(server, self.server_info)
 
         # Chord setup
         self.__id = int(hashlib.sha1(str(server_email_addr).encode()).hexdigest(), 16) % config.SIZE
@@ -41,7 +43,6 @@ class EBMS(rpyc.Service):
 
         self.ft[0] = 'unknown'
 
-        self.server_info = User(self.__id, server_email_addr, user_email, pwd)
 
         self.successors = tuple()  # list of successor nodes
 

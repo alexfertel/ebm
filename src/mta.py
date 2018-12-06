@@ -22,7 +22,7 @@ logger = logging.getLogger('SERVER')
 
 
 class Broker:
-    def __init__(self, addr):
+    def __init__(self, addr, user_info_credetials: User):
         """
         This class represents the message transfer agent type.
         """
@@ -34,7 +34,7 @@ class Broker:
         self.data_queue = []
         self.complete_messages = []
 
-        self.user = None
+        self.user_info_credetials = user_info_credetials
 
         self.fetch()  # Start a thread to fetch emails
 
@@ -78,7 +78,7 @@ class Broker:
     @thread
     def fetch(self):
         while True:
-            imbox = list(map(lambda x: Block.block_from_imbox_msg(x), self.recv(self.addr)))
+            imbox = list(map(lambda x: Block.block_from_imbox_msg(x), self.recv(self.addr, self.user_info_credetials)))
             self.enqueue(imbox)
             time.sleep(1)
 
@@ -171,7 +171,7 @@ class Broker:
         smtp.quit()
 
     @staticmethod
-    def recv(addr, user: User = User('id', 'myemail@test.com', 'usr', 'passw')):
+    def recv(addr, user: User):
         """
         This method contains the logic for fetching the next batch of messages
         from the imap server.
