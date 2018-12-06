@@ -6,7 +6,6 @@ import email
 
 from block import Block
 from user import User
-from mta import Broker
 from utils import cut
 
 logging.basicConfig(level=logging.INFO)
@@ -127,7 +126,7 @@ class Message:
             self.add(item)
 
     def send(self,
-             broker: Broker,
+             broker,
              addr: str,
              user: User = User('id', 'myemail@test.com', 'usr', 'passw')):
         """
@@ -156,7 +155,7 @@ class Message:
         # Enqueue each of the blocks of self as EmailMessage instances
         for block in self.blocks:
             block['Subject'] = json.dumps(block.subject, separators=(',', ':'))  # Make it a json for ease of parsing
-            block['From'] = f'{user.username}@{user.active_email}'
+            block['From'] = f'{user.active_email}'
             block['To'] = addr
             broker.enqueue(block)
 

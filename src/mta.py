@@ -8,13 +8,17 @@ import smtplib
 import ssl
 import time
 import config
+import logging
 
 from block import Block
 from user import User
-from threading import Thread
+from decorators import thread
 from imbox import Imbox
 from email.message import EmailMessage
 from message import Message
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger('SERVER')
 
 
 class Broker:
@@ -32,7 +36,7 @@ class Broker:
 
         self.user = None
 
-        self.start_thread(self.fetch, (self,))
+        self.fetch()  # Start a thread to fetch emails
 
     def __str__(self):
         queue = '*' * 25 + ' Queue ' + '*' * 25 + '\n' + f'{self.config_queue}' + '\n'
@@ -67,10 +71,11 @@ class Broker:
         """
         return self.data_queue.pop(0)
 
-    def start_thread(self, target: function, args: tuple):
-        th = Thread(target=target, args=args)
-        th.start()
+    # def start_thread(self, target, args: tuple):
+    #     th = Thread(target=target, args=args)
+    #     th.start()
 
+    @thread
     def fetch(self):
         while True:
             imbox = list(map(lambda x: Block.block_from_imbox_msg(x), self.recv(self.addr)))
@@ -179,6 +184,7 @@ class Broker:
         ssl_context.verify_mode = ssl.CERT_NONE
 
         unread = []
+        logger.debug(f'Imbox will try to connect to address: {addr}')
         with Imbox(addr,
                    username=user.username,
                    password=user.password,

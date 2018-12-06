@@ -1,6 +1,5 @@
 #!/usr/bin/env python3.6
 import config
-import fcntl
 import fire
 import hashlib
 import json
@@ -10,7 +9,6 @@ import random
 import rpyc
 import socket
 import string
-import struct
 
 from mta import Broker
 from user import User
@@ -26,7 +24,8 @@ class EBMS(rpyc.Service):
                  join_addr: str,
                  server: str,
                  pwd: str,
-                 ip_addr: str):
+                 ip_addr: str,
+                 user_email: str = ''):
         # Active users
         self.active_users = []
 
@@ -42,7 +41,7 @@ class EBMS(rpyc.Service):
 
         self.ft[0] = 'unknown'
 
-        self.server_info = User(self.__id, server_email_addr, f'server: {self.__id}', pwd)
+        self.server_info = User(self.__id, server_email_addr, user_email, pwd)
 
         self.successors = tuple()  # list of successor nodes
 
@@ -400,10 +399,10 @@ class EBMS(rpyc.Service):
 
 def main(server_email_addr: str = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6)),
          join_addr: str = None,
-         server: str = '',
-         pwd: str = '',
+         server: str = 'correo.estudiantes.matcom.uh.cu',
+         pwd: str = '#1S1m0l5enet',
          ip_addr: str = None):
-    t = ThreadedServer(EBMS(server_email_addr, join_addr, server, pwd, ip_addr), port=ip_addr[1] if ip_addr else config.PORT)
+    t = ThreadedServer(EBMS(server_email_addr, join_addr, server, pwd, ip_addr, user_email='s.martin@estudiantes.matcom.uh.cu'), port=ip_addr[1] if ip_addr else config.PORT)
     t.start()
 
 
