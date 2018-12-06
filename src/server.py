@@ -89,6 +89,9 @@ class EBMS(rpyc.Service):
     def exposed_identifier(self):
         return self.__id
 
+    def exposed_finger_table(self):
+        return tuple(self.ft)
+
     # Return first online successor
     def exposed_successor(self):
         logger.debug(f'Calling exposed_successor on server: {self.exposed_identifier() % config.SIZE}')
