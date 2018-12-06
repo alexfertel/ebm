@@ -36,7 +36,7 @@ def retry_times(times):
                     time.sleep(config.RETRY_ON_FAILURE_DELAY)
                     count += 1
 
-            logger.error(f'Exceeded retry_times when calling: {f.__name__}({args}, {kwargs}).')
+            logger.error(f'Exceeded retry_times when calling: {f.__name__}({*args}, {kwargs}).')
 
         return wrapper
 

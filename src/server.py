@@ -34,7 +34,7 @@ class EBMS(rpyc.Service):
         self.ft[0] = 'unknown'
 
         self.successors = tuple()  # list of successor nodes
-        
+
         self.failed_nodes = []  # list of successor nodes
 
         # Init data file
@@ -84,7 +84,7 @@ class EBMS(rpyc.Service):
         except:
             logger.error(f'Server with address: {addr} is down.')
             if (key, addr) not in self.failed_nodes:
-                self.failed_nodes = self.failed_nodes.append((key, addr))
+                self.failed_nodes.append((key, addr))
             return False
 
     def exposed_identifier(self):
@@ -106,6 +106,9 @@ class EBMS(rpyc.Service):
             logger.debug(f'Successor {index} in server: {self.exposed_identifier()} is {n}')
             if self.is_online(*n):
                 return n
+        else:
+            logger.error(f'There is no online successor, thus we are our successor')
+            return self.exposed_identifier(), self.addr
 
     def exposed_get_successors(self):
         return self.successors
