@@ -53,15 +53,6 @@ class EBMS(rpyc.Service):
         self.join(join_addr)  # Join chord
         logger.debug(f'Ended join of server: {self.exposed_identifier()}')
 
-        logger.debug(f'Starting stabilization of: {self.exposed_identifier()}')
-        self.stabilize()
-
-        logger.debug(f'Start fixing fingers of: {self.exposed_identifier()}')
-        self.fix_fingers()
-
-        logger.debug(f'Start updating successors of: {self.exposed_identifier()}')
-        self.update_successors()
-
     @retry_times(config.RETRY_ON_FAILURE_TIMES)
     def remote_request(self, addr, method, *args):
         if addr == self.addr:
@@ -108,8 +99,11 @@ class EBMS(rpyc.Service):
         return self.ft[0]
 
     def exposed_find_successor(self, exposed_identifier):
-        logger.debug(
-            f'Calling exposed_find_successor({exposed_identifier % config.SIZE}) on server: {self.exposed_identifier() % config.SIZE}')
+        logger.debug(f'Calling exposed_find_successor({exposed_identifier % config.SIZE}) '
+                     f'on server: {self.exposed_identifier() % config.SIZE}')
+
+        if self.ft[0] and inbetween(self.ft[0][1] + 1, self.exposed_identifier() + 1, exposed_identifier):
+            return self.exposed_identifier(), self.addr
 
         n_prime = self.exposed_find_predecessor(exposed_identifier)
         return self.remote_request(n_prime[1], 'successor')
@@ -148,6 +142,15 @@ class EBMS(rpyc.Service):
             self.ft[1] = (self.exposed_identifier(), self.addr)
 
         logger.debug(f'Successful join of: {self.exposed_identifier()} to chord')
+
+        logger.debug(f'Starting stabilization of: {self.exposed_identifier()}')
+        self.stabilize()
+
+        logger.debug(f'Start fixing fingers of: {self.exposed_identifier()}')
+        self.fix_fingers()
+
+        logger.debug(f'Start updating successors of: {self.exposed_identifier()}')
+        self.update_successors()
 
     # periodically verify n's immediate succesor,
     # and tell the exposed_successor about n.
