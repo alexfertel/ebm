@@ -1,7 +1,10 @@
-import time
 import config
+import time
+import logging
 
 from threading import Thread
+
+logger = logging.getLogger('DECORATOR')
 
 
 def loop(f, sleep_time, args, kwargs):
@@ -32,6 +35,8 @@ def retry_times(times):
                 except:
                     time.sleep(config.RETRY_ON_FAILURE_DELAY)
                     count += 1
+
+            logger.error(f'Exceeded retry_times when calling: {f.__name__}({args}, {kwargs}).')
 
         return wrapper
 

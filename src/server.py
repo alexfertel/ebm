@@ -1,12 +1,14 @@
 #!/usr/bin/env python3.6
 
+import config
+import fire
+import hashlib
+import json
+import logging
+import random
 import rpyc
 import socket
-import config
-import random
-import hashlib
-import logging
-import json
+import string
 
 from utils import inbetween
 from decorators import retry, retry_times
@@ -16,9 +18,9 @@ logger = logging.getLogger('SERVER')
 
 
 class EBMS(rpyc.Service):
-    def __init__(self, server_email_addr: str = 'a.fertel@estudiantes.matcom.uh.cu',
-                 join_addr: str = None,
-                 ip_addr: str = None):
+    def __init__(self, server_email_addr: str,
+                 join_addr: str,
+                 ip_addr: str):
 
         # Chord setup
         self.__id = int(hashlib.sha1(str(server_email_addr).encode()).hexdigest(), 16) % config.SIZE
@@ -29,7 +31,7 @@ class EBMS(rpyc.Service):
 
         self.ft[0] = 'unknown'
 
-        self.successors = ()  # list of successor nodes
+        self.successors = tuple()  # list of successor nodes
 
         # Init data file
         with open('data.json', 'w+') as fd:
@@ -181,7 +183,7 @@ class EBMS(rpyc.Service):
         if self.addr[1] == succ[1]:
             return
         successors = [succ]
-        remote_successors = list(self.remote_request(succ[1], 'exposed_get_successors'))[:config.SUCC_COUNT - 1]
+        remote_successors = list(self.remote_request(succ[1], 'get_successors'))[:config.SUCC_COUNT - 1]
         if remote_successors:
             successors += remote_successors
         self.successors = tuple(successors)
@@ -209,27 +211,35 @@ class EBMS(rpyc.Service):
         pass
 
 
+def main(server_email_addr: str = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6)),
+         join_addr: str = None,
+         ip_addr: str = None):
+    t = ThreadedServer(EBMS(server_email_addr, join_addr, ip_addr))
+    t.start()
+
+
 if __name__ == "__main__":
     from rpyc.utils.server import ThreadedServer
-    import sys
+
+    # import sys
+    fire.Fire(main)
 
     # print(len(sys.argv))
-    if len(sys.argv) < 2:
-        print('Usage: ./server.py <email_address> <ip_address>')
-        logger.debug(f'Initializing ThreadedServer with default values: a.fertel@correo.estudiantes.matcom.uh.cu'
-                     f' and 10.6.98.49.')
-        t = ThreadedServer(EBMS(), port=config.PORT)
-    elif len(sys.argv) == 2:
-        logger.debug(f'Initializing ThreadedServer with default email address: a.fertel@correo.estudiantes.matcom.uh.cu'
-                     f' and ip address: {sys.argv[1]}')
-        t = ThreadedServer(EBMS(ip_addr=sys.argv[1]), port=config.PORT)
-    elif len(sys.argv) == 3:
-        logger.debug(f'Initializing ThreadedServer with default email address: a.fertel@correo.estudiantes.matcom.uh.cu'
-                     f' and ip address: {sys.argv[1]}')
-        t = ThreadedServer(EBMS(sys.argv[1], sys.argv[2]), port=config.PORT)
-    else:
-        logger.debug(f'Initializing ThreadedServer with email address: {sys.argv[1]}, join address: {sys.argv[2]}'
-                     f' and ip address: {sys.argv[3]}')
-        t = ThreadedServer(EBMS(sys.argv[1], sys.argv[2], sys.argv[3]), port=config.PORT)
-
-    t.start()
+    # if len(sys.argv) < 2:
+    #     print('Usage: ./server.py <email_address> <ip_address>')
+    #     logger.debug(f'Initializing ThreadedServer with default values: a.fertel@correo.estudiantes.matcom.uh.cu'
+    #                  f' and 10.6.98.49.')
+    #     t = ThreadedServer(EBMS(), port=config.PORT)
+    # elif len(sys.argv) == 2:
+    #     logger.debug(f'Initializing ThreadedServer with default email address: a.fertel@correo.estudiantes.matcom.uh.cu'
+    #                  f' and ip address: {sys.argv[1]}')
+    #     t = ThreadedServer(EBMS(ip_addr=sys.argv[1]), port=config.PORT)
+    # elif len(sys.argv) == 3:
+    #     logger.debug(f'Initializing ThreadedServer with default email address: a.fertel@correo.estudiantes.matcom.uh.cu'
+    #                  f' and ip address: {sys.argv[1]}')
+    #     t = ThreadedServer(EBMS(sys.argv[1], sys.argv[2]), port=config.PORT)
+    # else:
+    #     logger.debug(f'Initializing ThreadedServer with email address: {sys.argv[1]}, join address: {sys.argv[2]}'
+    #                  f' and ip address: {sys.argv[3]}')
+    #     t = ThreadedServer(EBMS(sys.argv[1], sys.argv[2], sys.argv[3]), port=config.PORT)
+    # t.start()
