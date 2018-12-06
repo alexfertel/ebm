@@ -41,3 +41,11 @@ def retry_times(times):
         return wrapper
 
     return decorator
+
+
+def thread(f):
+    def thread_decorator(*args, **kwargs):
+        th = Thread(target=f, args=args, kwargs=kwargs)
+        th.start()
+
+    return thread_decorator

@@ -32,3 +32,10 @@ def inbetween(a, b, c):
     if a < b:
         return a <= c <= b
     return a <= c or c <= b
+
+
+def in_queue(id: str, queue: list):
+    for item_id, item in queue:
+        if id == item_id:
+            return item
+    return None

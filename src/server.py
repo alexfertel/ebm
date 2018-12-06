@@ -12,6 +12,8 @@ import socket
 import string
 import struct
 
+from mta import Broker
+from user import User
 from utils import inbetween
 from decorators import retry, retry_times
 
@@ -22,7 +24,14 @@ logger = logging.getLogger('SERVER')
 class EBMS(rpyc.Service):
     def __init__(self, server_email_addr: str,
                  join_addr: str,
+                 server: str,
+                 pwd: str,
                  ip_addr: str):
+        # Active users
+        self.active_users = []
+
+        # Setup broker
+        self.mta = Broker(server)
 
         # Chord setup
         self.__id = int(hashlib.sha1(str(server_email_addr).encode()).hexdigest(), 16) % config.SIZE
@@ -32,6 +41,8 @@ class EBMS(rpyc.Service):
         self.ft: list = [(-1, ('', -1)) for _ in range(config.MAX_BITS + 1)]
 
         self.ft[0] = 'unknown'
+
+        self.server_info = User(self.__id, server_email_addr, f'server: {self.__id}', pwd)
 
         self.successors = tuple()  # list of successor nodes
 
@@ -258,11 +269,141 @@ class EBMS(rpyc.Service):
     def move(self):
         pass
 
+    # ####################################################### MQ #######################################################
+    def subscribe(self, subscriber: str, event: str, email_client: str, message_id: str):
+        """
+            This method represents a subscription.
+            :param subscriber: str
+            :param event: str
+            :param email_client: str
+            :param message_id: str
+            :return: None
+            """
+        # TODO: ver como retorna los objetos el self.get
+        subscription_list_id = hashlib.sha1(event.encode()).hexdigest()
+        subscription_list = self.exposed_get(subscription_list_id)
+        if subscription_list:
+            user_id = hashlib.sha1(subscriber.encode()).hexdigest()
+            subscription_list['list'].push(user_id)
+
+            self.exposed_set(subscription_list_id, subscription_list)
+
+            msg = self.mta.build_message('SUBSCRIBED', protocol=config.PROTOCOLS['PUB/SUB'],
+                                         topic=config.TOPICS['ANSWER'], message_id=message_id)
+        else:
+            msg = self.mta.build_message('error', protocol=config.PROTOCOLS['PUB/SUB'], topic=config.TOPICS['ANSWER'],
+                                         message_id=message_id)
+        msg.send(self.mta, email_client, self.server_info)
+
+        # self.add(subscription_list_id, subscriber)
+
+    def unsubscribe(self, subscriber: str, event: str, email_client: str, message_id: str):
+        """
+        This method represents an unsubscription.
+        :param message_id: str
+        :param email_client: str
+        :param subscriber: str
+        :param event: str
+        :return: None
+        """
+        subscription_list_id = hashlib.sha1(event.encode()).hexdigest()
+        subscription_list = self.exposed_get(subscription_list_id)
+        if subscription_list:
+            user_id = hashlib.sha1(subscriber.encode()).hexdigest()
+            subscription_list['list'].remove(user_id)
+
+            self.exposed_set(subscription_list_id, subscription_list)
+
+            msg = self.mta.build_message('UNSUBSCRIBED', protocol=config.PROTOCOLS['PUB/SUB'],
+                                         topic=config.TOPICS['ANSWER'], message_id=message_id)
+        else:
+            msg = self.mta.build_message('ERROR', protocol=config.PROTOCOLS['PUB/SUB'], topic=config.TOPICS['ANSWER'],
+                                         message_id=message_id)
+
+        msg.send(self.mta, email_client, self.server_info)
+
+    def publish(self, user: str, event: str, email_client: str, message_id: str):
+        subscription_list_id = hashlib.sha1(event.encode()).hexdigest()
+        user_id = hashlib.sha1(user.encode()).hexdigest()
+
+        subscriptions = self.exposed_get(subscription_list_id)
+        if user_id == subscriptions['admin']:
+            content = ';'.join([self.exposed_get(user_id)['mail'] for user_id in subscriptions['list']])
+
+            msg = self.mta.build_message(body=content, protocol=config.PROTOCOLS['PUB/SUB'],
+                                         topic=config.TOPICS['ANSWER'], message_id=message_id)
+        else:
+            msg = self.mta.build_message('YOU DO NOT HAVE PERMISSION', protocol=config.PROTOCOLS['PUB/SUB'],
+                                         topic=config.TOPICS['ANSWER'], message_id=message_id)
+
+        msg.send(self.mta, email_client, self.server_info)
+
+    def create_event(self, user: str, event: str, email_client: str, message_id: str):
+        subscription_list_id = hashlib.sha1(event.encode()).hexdigest()
+        user_id = hashlib.sha1(user.encode()).hexdigest()
+        subscriptions = self.exposed_get(subscription_list_id)
+
+        if not subscriptions:
+            event = {
+                'list': [],
+                'admin': user_id
+            }
+            self.exposed_set(subscription_list_id, event)
+            msg = self.mta.build_message('EVENT CREATED', protocol=config.PROTOCOLS['PUB/SUB'],
+                                         topic=config.TOPICS['ANSWER'], message_id=message_id)
+        else:
+            msg = self.mta.build_message('ERROR TO CREATE EVENT', protocol=config.PROTOCOLS['PUB/SUB'],
+                                         topic=config.TOPICS['ANSWER'], message_id=message_id)
+
+        msg.send(self.mta, email_client, self.server_info)
+
+    def send(self, user: str, email_client: str, message_id: str):
+        user_mail = self.exposed_get(hashlib.sha1(user.encode()).hexdigest())['mail']
+
+        msg = self.mta.build_message(user_mail, protocol=config.config.PROTOCOLS['DATA'], topic=config.TOPICS['ANSWER'],
+                                     message_id=message_id)
+        msg.send(self.mta, email_client, self.server_info)
+
+    def login(self, user: str, pwd: str, user_mail: str, message_id: str):
+        user_id = hashlib.sha1(user.encode()).hexdigest()
+        pwd = hashlib.sha1(pwd.encode()).hexdigest()
+
+        user = self.exposed_get(user_id)
+        if user['pass'] == pwd:
+            msg = self.mta.build_message(user_id, protocol=config.config.PROTOCOLS['CONFIG'],
+                                         topic=config.TOPICS['LOGIN'], message_id=message_id)
+        else:
+            msg = self.mta.build_message('ERROR AUTHENTICATION', protocol=config.config.PROTOCOLS['CONFIG'],
+                                         topic=config.TOPICS['LOGIN'], message_id=message_id)
+
+        msg.send(self.mta, user_mail, self.server_info)
+
+    def register(self, user: str, pwd: str, user_mail: str, message_id: str):
+        user_id = hashlib.sha1(user.encode()).hexdigest()
+        user = self.exposed_get(user_id)
+        if not user:
+            pwd = hashlib.sha1(pwd.encode()).hexdigest()
+            user = {
+                'mail': user_mail,
+                'pwd': pwd,
+                'user': user
+            }
+            self.exposed_set(user_id, user)
+            msg = self.mta.build_message(user_id, protocol=config.config.PROTOCOLS['CONFIG'],
+                                         topic=config.TOPICS['REGISTER'], message_id=message_id)
+        else:
+            msg = self.mta.build_message('ERROR', protocol=config.config.PROTOCOLS['CONFIG'],
+                                         topic=config.TOPICS['REGISTER'], message_id=message_id)
+
+        msg.send(self.mta, user_mail, self.server_info)
+
 
 def main(server_email_addr: str = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6)),
          join_addr: str = None,
+         server: str = '',
+         pwd: str = '',
          ip_addr: str = None):
-    t = ThreadedServer(EBMS(server_email_addr, join_addr, ip_addr), port=ip_addr[1] if ip_addr else config.PORT)
+    t = ThreadedServer(EBMS(server_email_addr, join_addr, server, pwd, ip_addr), port=ip_addr[1] if ip_addr else config.PORT)
     t.start()
 
 

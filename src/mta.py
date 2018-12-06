@@ -3,15 +3,18 @@
 # So, how do you know that a block is part of a message? how do you identify
 # a block? Blocks should have ids, and we should keep a dict holding
 # currently known message blocks while they're alive.
+import os
 import smtplib
 import ssl
 import time
+import config
 
 from block import Block
 from user import User
 from threading import Thread
 from imbox import Imbox
 from email.message import EmailMessage
+from message import Message
 
 
 class Broker:
@@ -23,33 +26,46 @@ class Broker:
 
         self.addr = addr
         self.messages = {}  # blocks
-        self.queue = []  # Block queue
+        self.config_queue = []  # Block queue
+        self.data_queue = []
+        self.complete_messages = []
 
         self.user = None
 
         self.start_thread(self.fetch, (self,))
 
     def __str__(self):
-        queue = '*' * 25 + ' Queue ' + '*' * 25 + '\n' + f'{self.queue}' + '\n'
+        queue = '*' * 25 + ' Queue ' + '*' * 25 + '\n' + f'{self.config_queue}' + '\n'
         messages = '*' * 25 + ' Messages ' + '*' * 25 + '\n' + f'{self.messages}' + '\n'
         return queue + messages
 
-    def enqueue(self, block=None, *blocks):
+    def enqueue(self, blocks: list):
         """
         Enqueues the block or the *blocks into the broker's queue.
-        :param block: Block
+        :param blocks: list[Block]
         :return: None
         """
-        if block:
-            self.queue.append(block)
-        self.queue.extend(*blocks)
+        # TODO: clasificar los msj
 
-    def dequeue(self) -> Block:
+        for block in blocks:
+            if block.subject['protocol'] == config.PROTOCOLS['CONFIG']:
+                self.config_queue.append(block)
+            else:
+                self.data_queue.append(block)
+
+    def dequeue_config(self) -> Block:
         """
         Dequeues the first block from the broker's queue.
         :return: Block
         """
-        return self.queue.pop(0)
+        return self.config_queue.pop(0)
+
+    def dequeue_data(self) -> Block:
+        """
+        Dequeues the first block from the broker's queue.
+        :return: Block
+        """
+        return self.data_queue.pop(0)
 
     def start_thread(self, target: function, args: tuple):
         th = Thread(target=target, args=args)
@@ -61,36 +77,22 @@ class Broker:
             self.enqueue(imbox)
             time.sleep(1)
 
-    def process(self):
+    def process_data(self):
         # The broker received another block, so lets process it and see if it is part of the current message.
         # The client should have used generate_block_id to create the identifier and it should come in the
         # email Subject. Parse the email and get the Subject.
-        block = self.dequeue()
+        block = self.dequeue_data()
 
         subject = block.subject
-
-        if subject['topic'] == 'CMD':  # It is an RPC command
-            # So this is something like n.find_predecessor(id)
-            # where this node is n, so if we need to chain a call to another node
-            # it would recursively send the RPC call
-            # therefore receivng an email with protocol 4 with the answer
-            answer = self.user.execute(subject['cmd'], *subject['args'])
-            msg = self.mta.build_message(answer, protocol=3, topic='ANSWER')
-            self.send(block.sent_from, msg)
-
-        if subject['topic'] == 'ANSWER':  # It is an answer from an RPC command
-            # If the node property in the subject equals this node's id then the answer is for this node
-            self.user.answer = answer
-            return answer
 
         if block.message in self.messages:
             self.messages[block.message].push(block)
         else:
             self.messages[block.message] = [block]
 
-        # if len(self.messages[block.message]) == len(list(filter(lambda x: x[0] == block.message,
-        #                                                         self.messages.items()))[0][0]):
-        #     complete_message = Broker.merge(self.messages[block.message])
+        if len(self.messages[block.message]) == len(list(filter(lambda x: x[0] == block.message,
+                                                                self.messages.items()))[0][0]):
+            self.complete_messages.append(Broker.merge(self.messages[block.message]))
 
         # Parse the subject and get the identifier
         # identifier = 'None or some identifier should be here after parsing'
@@ -99,14 +101,12 @@ class Broker:
         # See what message it belongs to, insert it and check the message's lifetime
         # Message.match_block_with_message(incoming_block, self.messages)
 
-        pass
-
     def loop(self):
         while True:
             print(self)
 
-            if len(self.queue) > 0:
-                self.process()
+            if len(self.data_queue) > 0:
+                self.process_data()
             # Should start with the synchronization of the imap server,
             # fetching new emails. I think this is of the upmost importance,
             # because new emails could mean errors or p2p messages.
@@ -122,14 +122,27 @@ class Broker:
             # TODO: There is not much more, right?
 
     @staticmethod
-    def merge(items: list) -> str:
+    def merge(items: list) -> tuple:
         """
         Merge all blocks of the same message
+
         :param items: list
-        :return: str
+        :return: (message_id, data)
         """
         items.sort(key=lambda x: x.index)
-        return ''.join(map(lambda x: x.text, items))
+        # TODO: poner la propiedad name a block
+        f = open(f'{os.path.join(config.UPLOAD_FOLDER,items[0].name)}', "w+")
+
+        b = None
+        for block in items:
+            b = open(f'{os.path.join(config.UPLOAD_FOLDER,block.id)}', 'r')
+            f.write(block.text)
+
+        if b:
+            b.close()
+        f.close()
+
+        return items[0].message_id, items[0].subject['name']
 
     @staticmethod
     def send(addr, msg: EmailMessage):
@@ -177,7 +190,8 @@ class Broker:
 
         return unread
 
-    def build_message(self, body: str, protocol: int = 2, topic: str = 'P2P', cmd: str = '', args: list = None):
+    def build_message(self, body: str, protocol: int = 2, topic: int = 1, cmd: str = '', args: list = None,
+                      message_id: str = '', name: str = '', user: str = ''):
         """
         subject = {
             'message_id': msg.id,
@@ -186,8 +200,7 @@ class Broker:
             'protocol': one of [ 1, 2, 3 ] ( PUB/SUB, CONFIG, RPC ),
             'cmd': one of [find_predecessor, find_succesor],
             'args': a list of args for the cmd,
-            'node': node identifier in chord,
-            'method_answer': 
+            'node': node identifier in chord
         }
         :param body: text
         :param protocol: subject.protocol
@@ -204,7 +217,10 @@ class Broker:
                 'protocol': protocol,
                 'cmd': cmd,
                 'args': args,
-                'node': self.identifier
-            })
+                # 'node': self.identifier,
+                'user': user,
+                'name': name
+            },
+            message_id=message_id)
 
         return msg
