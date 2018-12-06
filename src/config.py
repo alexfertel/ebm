@@ -4,6 +4,8 @@ DATA_MSG = 1
 MAX_BITS = 32
 SIZE = 1 << MAX_BITS
 PORT = 18861
+SUCC_COUNT = 3
+
 PROTOCOLS = {
     'PUB/SUB': 1,
     'CONFIG': 2,

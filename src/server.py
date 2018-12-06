@@ -25,11 +25,11 @@ class EBMS(rpyc.Service):
         # Compute  Table computable properties (start, interval).
         # The  property is computed when a joins or leaves and at the chord start
         logger.debug(f'Initializing fingers on server: {self.exposed_identifier() % config.SIZE}')
-        self.ft: list = [(-1, '') for _ in range(config.MAX_BITS + 1)]
+        self.ft: list = [(-1, ('', -1)) for _ in range(config.MAX_BITS + 1)]
 
         self.ft[0] = 'unknown'
 
-        # self.ft[0] = ()  # At first the exposed_predecessor is unknown
+        self.succ_list = ()  # list of successor nodes
 
         # Init data file
         with open('data.json', 'w+') as fd:
@@ -38,13 +38,13 @@ class EBMS(rpyc.Service):
         logger.debug(f'Capture ip address of self on server: {self.exposed_identifier() % config.SIZE}')
         # Sets this server's ip address correctly :) Thanks stackoverflow!
         if not ip_addr:
-            self.ip = (([ip for ip in socket.gethostbyname_ex(socket.gethostname())[2] if not ip.startswith("127.")]
-                        or [[(s.connect(("8.8.8.8", 53)), s.getsockname()[0], s.close()) for s in
-                             [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]]) + ["no IP found"])[0]
+            self.addr = (([ip for ip in socket.gethostbyname_ex(socket.gethostname())[2] if not ip.startswith("127.")]
+                          or [[(s.connect(("8.8.8.8", 53)), s.getsockname()[0], s.close()) for s in
+                               [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]]) + ["no IP found"])[0], config.PORT
         else:
-            self.ip = ip_addr
+            self.addr = ip_addr
 
-        logger.debug(f'Ip address of self on server: {self.exposed_identifier()} is: {self.ip}')
+        logger.debug(f'Ip address of self on server: {self.exposed_identifier()} is: {self.addr}')
 
         logger.debug(f'Starting join of server: {self.exposed_identifier()}')
         self.join(join_addr)  # Join chord
@@ -55,14 +55,14 @@ class EBMS(rpyc.Service):
         logger.debug(f'Start fixing fingers of: {self.exposed_identifier()}')
         self.fix_fingers()
 
-    def remote_request(self, ip, method, *args):
+    def remote_request(self, addr, method, *args):
         m = None
         ans = None
-        if ip == self.ip:
+        if addr == self.addr:
             m = getattr(self, 'exposed_' + method)
             ans = m(*args)
         else:
-            c = rpyc.connect(ip, config.PORT)
+            c = rpyc.connect(*addr)
             m = getattr(c.root, method)
             ans = m(*args)
             c.close()
@@ -102,12 +102,12 @@ class EBMS(rpyc.Service):
     def exposed_find_predecessor(self, exposed_identifier):
         logger.debug(
             f'Calling exposed_find_predecessor({exposed_identifier % config.SIZE}) on server: {self.exposed_identifier() % config.SIZE}')
-        n_prime = (self.exposed_identifier(), self.ip)
+        n_prime = (self.exposed_identifier(), self.addr)
         succ = self.exposed_successor()
 
         # succ = n_prime.exposed_successor()
         if succ[0] == self.exposed_identifier():
-            return self.exposed_identifier(), self.ip
+            return self.exposed_identifier(), self.addr
 
         while not inbetween(n_prime[0] + 1, succ[0] + 1, exposed_identifier):
             # logger.debug(
@@ -142,13 +142,13 @@ class EBMS(rpyc.Service):
                 # n_primer = n_prime.ft[i]
         else:
             logger.debug(f'Did not enter inbetween if')
-        return self.exposed_identifier(), self.ip
+        return self.exposed_identifier(), self.addr
 
     # # n joins the network;
     # # n' is an arbitrary in the network
     def join(self, n_prime_addr):
         if n_prime_addr:
-            logger.debug(f'Joining network to the {n_prime_addr} -> server: {self.exposed_identifier()}')
+            logger.debug(f'Joining network, connecting to  {n_prime_addr} -> server: {self.exposed_identifier()}')
             self.ft[0] = 'unknown'
 
             print(n_prime_addr)
@@ -160,10 +160,10 @@ class EBMS(rpyc.Service):
             self.ft[1] = finger
         else:  # n is the only in the network
             logger.debug(f'First of the network -> server: {self.exposed_identifier()}')
-            self.ft[1] = (self.exposed_identifier(), self.ip)
+            self.ft[1] = (self.exposed_identifier(), self.addr)
             # for i in range(1, config.MAX_BITS + 1):
             # self.ft[i][0] = self.exposed_identifier()
-            # self.ft[i][1] = self.ip
+            # self.ft[i][1] = self.addr
             # logger.debug(f'exposed_successor of the first of the network {self.ft[1]}')
             # logger.debug(f'exposed_predecessor of the first of the network {self.ft[0]}')
 
@@ -187,8 +187,8 @@ class EBMS(rpyc.Service):
         if x != 'unknown' and inbetween(self.exposed_identifier() + 1, succ[0] - 1, x[0]):
             self.ft[1] = x
 
-        self.remote_request(self.exposed_successor()[1], 'notify', (self.exposed_identifier(), self.ip))
-        # n_prime.exposed_notify(tuple([self.exposed_identifier(), self.ip]))
+        self.remote_request(self.exposed_successor()[1], 'notify', (self.exposed_identifier(), self.addr))
+        # n_prime.exposed_notify(tuple([self.exposed_identifier(), self.addr[0]]))
 
     # n' thinks it might be our exposed_predecessor.
     def exposed_notify(self, n_prime_key_addr: tuple):
