@@ -29,14 +29,16 @@ class EBMS(rpyc.Service):
         # Active users
         self.active_users = []
 
+
+        # Chord setup
+        self.__id = int(hashlib.sha1(str(server_email_addr).encode()).hexdigest(), 16) % config.SIZE
+        # Compute  Table computable properties (start, interval).
+
         self.server_info = User(self.exposed_identifier(), server_email_addr, user_email, pwd)
 
         # Setup broker
         self.mta = Broker(server, self.server_info)
 
-        # Chord setup
-        self.__id = int(hashlib.sha1(str(server_email_addr).encode()).hexdigest(), 16) % config.SIZE
-        # Compute  Table computable properties (start, interval).
         # The  property is computed when a joins or leaves and at the chord start
         logger.debug(f'Initializing fingers on server: {self.exposed_identifier() % config.SIZE}')
         self.ft: list = [(-1, ('', -1)) for _ in range(config.MAX_BITS + 1)]
