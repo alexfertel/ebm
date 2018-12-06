@@ -34,6 +34,8 @@ class EBMS(rpyc.Service):
         self.ft[0] = 'unknown'
 
         self.successors = tuple()  # list of successor nodes
+        
+        self.failed_nodes = []  # list of successor nodes
 
         # Init data file
         with open('data.json', 'w+') as fd:
@@ -67,16 +69,22 @@ class EBMS(rpyc.Service):
             c.close()
         return ans
 
-    def is_online(self, addr):
+    def is_online(self, key, addr):
         if addr == self.addr:
             return True
         try:
             c = rpyc.connect(*addr)
             c.close()
-            logger.error(f'Server with address: {addr} is online.')
+            logger.info(f'Server with address: {addr} is online.')
+            if (key, addr) in self.failed_nodes:
+                logger.info(f'Server with address: {addr} was down. Execute remote join.')
+                self.failed_nodes.remove((key, addr))
+                self.remote_request(addr, 'join', (self.exposed_identifier(), self.addr))
             return True
         except:
             logger.error(f'Server with address: {addr} is down.')
+            if (key, addr) not in self.failed_nodes:
+                self.failed_nodes = self.failed_nodes.append((key, addr))
             return False
 
     def exposed_identifier(self):
@@ -89,9 +97,14 @@ class EBMS(rpyc.Service):
     # Return first online successor
     def exposed_successor(self):
         logger.debug(f'Calling exposed_successor on server: {self.exposed_identifier() % config.SIZE}')
-        for index, n in enumerate([self.ft[1]] + list(self.successors)):
+        candidates = [self.ft[1]] + list(self.successors)
+
+        if len(candidates) == 0:  # Trying to fix fingers without having stabilized
+            return self.exposed_identifier(), self.addr
+
+        for index, n in enumerate(candidates):
             logger.debug(f'Successor {index} in server: {self.exposed_identifier()} is {n}')
-            if self.is_online(n[1]):
+            if self.is_online(*n):
                 return n
 
     def exposed_get_successors(self):
@@ -163,7 +176,7 @@ class EBMS(rpyc.Service):
         succ = self.exposed_successor()
         x = self.remote_request(succ[1], 'predecessor')
 
-        if x != 'unknown' and inbetween(self.exposed_identifier() + 1, succ[0] - 1, x[0]) and self.is_online(x[1]):
+        if x != 'unknown' and inbetween(self.exposed_identifier() + 1, succ[0] - 1, x[0]) and self.is_online(*x):
             self.ft[1] = x
 
         self.remote_request(self.exposed_successor()[1], 'notify', (self.exposed_identifier(), self.addr))
