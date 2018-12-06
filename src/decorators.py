@@ -29,7 +29,7 @@ def retry_times(times):
                 try:
                     ret = f(*args, **kwargs)
                     return ret
-                except Exception:
+                except:
                     time.sleep(config.RETRY_ON_FAILURE_DELAY)
                     count += 1
 
