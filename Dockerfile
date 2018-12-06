@@ -1,10 +1,3 @@
-FROM ebm
-
-MAINTAINER alexfertel97@gmail.com sandormartin37@gmail.com
-
-WORKDIR /usr/ebm
-
-COPY . .
-
-WORKDIR /usr/ebm/src
+FROM ebm:stable
+RUN pip3 install fire
 
