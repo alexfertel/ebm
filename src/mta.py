@@ -7,6 +7,8 @@ import os
 import smtplib
 import ssl
 import time
+from typing import List, Any
+
 import config
 import logging
 
@@ -78,7 +80,9 @@ class Broker:
     @thread
     def fetch(self):
         while True:
-            imbox = list(map(lambda x: Block.block_from_imbox_msg(x), self.recv(self.addr, self.user_info_credetials)))
+            imbox: List[Block] = list(map(lambda x: Block.block_from_imbox_msg(x),
+                                          self.recv(self.addr, self.user_info_credetials)))
+            imbox = list(filter(lambda x: x is not None, imbox))
             self.enqueue(imbox)
             time.sleep(1)
 
