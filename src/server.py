@@ -90,6 +90,9 @@ class EBMS(rpyc.Service):
     def exposed_identifier(self):
         return self.__id
 
+    def exposed_failed_nodes(self):
+        return self.failed_nodes
+
     # ##################################################### CHORD ######################################################
     def exposed_finger_table(self):
         return tuple(self.ft)
@@ -104,7 +107,7 @@ class EBMS(rpyc.Service):
 
         for index, n in enumerate(candidates):
             logger.debug(f'Successor {index} in server: {self.exposed_identifier()} is {n}')
-            if self.is_online(*n):
+            if n and self.is_online(*n):
                 return n
         else:
             logger.error(f'There is no online successor, thus we are our successor')
@@ -179,7 +182,7 @@ class EBMS(rpyc.Service):
         succ = self.exposed_successor()
         x = self.remote_request(succ[1], 'predecessor')
 
-        if x != 'unknown' and inbetween(self.exposed_identifier() + 1, succ[0] - 1, x[0]) and self.is_online(*x):
+        if x and x != 'unknown' and inbetween(self.exposed_identifier() + 1, succ[0] - 1, x[0]) and self.is_online(*x):
             self.ft[1] = x
 
         self.remote_request(self.exposed_successor()[1], 'notify', (self.exposed_identifier(), self.addr))
@@ -203,7 +206,7 @@ class EBMS(rpyc.Service):
 
     @retry(config.UPDATE_SUCCESSORS_DELAY)
     def update_successors(self):
-        logging.debug('Updating successor list on server: {self.exposed_identifier() % config.SIZE}')
+        logging.debug(f'Updating successor list on server: {self.exposed_identifier() % config.SIZE}')
         succ = self.exposed_successor()
 
         if self.addr[1] == succ[1]:
