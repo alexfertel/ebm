@@ -9,7 +9,7 @@ import logging
 import json
 
 from utils import inbetween
-from decorators import retry
+from decorators import retry, retry_times
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('SERVER')
@@ -55,9 +55,8 @@ class EBMS(rpyc.Service):
         logger.debug(f'Start fixing fingers of: {self.exposed_identifier()}')
         self.fix_fingers()
 
+    @retry_times(config.RETRY_ON_FAILURE_TIMES)
     def remote_request(self, addr, method, *args):
-        m = None
-        ans = None
         if addr == self.addr:
             m = getattr(self, 'exposed_' + method)
             ans = m(*args)
@@ -173,7 +172,7 @@ class EBMS(rpyc.Service):
 
     # periodically verify n's immediate succesor,
     # and tell the exposed_successor about n.
-    @retry(10)
+    @retry(config.STABILIZATION_DELAY)
     def stabilize(self):
         logger.debug(f'\nStabilizing on server: {self.exposed_identifier() % config.SIZE}\n')
         succ = self.exposed_successor()
@@ -202,7 +201,7 @@ class EBMS(rpyc.Service):
             # self.ft[0][1] = n_prime_key_addr[1]
 
     # periodically refresh finger table entries
-    @retry(7)
+    @retry(config.FIX_FINGERS_DELAY)
     def fix_fingers(self):
         logger.debug(f'Fixing fingers on server: {self.exposed_identifier() % config.SIZE}')
         if config.MAX_BITS + 1 > 2:
