@@ -46,4 +46,4 @@ rpyc*
 plumbum*
 ebm.tar.xz
 src/data.json
-client/**/*
+ebmc/**/*
