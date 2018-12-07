@@ -31,8 +31,6 @@ class EBMS(rpyc.Service):
 
         self.ft[0] = 'unknown'
 
-        self.me = self.exposed_identifier(), self.addr
-
         self.successors = tuple()  # list of successor nodes
 
         self.failed_nodes = []  # list of successor nodes
@@ -49,6 +47,8 @@ class EBMS(rpyc.Service):
                             0], config.PORT
         else:
             self.addr = ip_addr
+
+        self.me = self.exposed_identifier(), self.addr
 
         logger.debug(f'Ip address of self on server: {self.exposed_identifier()} is: {self.addr}')
 
