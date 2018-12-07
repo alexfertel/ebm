@@ -216,9 +216,11 @@ class EBMS(rpyc.Service):
             return
         successors = [succ]
         remote_successors = list(self.remote_request(succ[1], 'get_successors'))[:config.SUCC_COUNT - 1]
+        logging.info(f'Remote successors: {remote_successors}')
         if remote_successors:
             successors += remote_successors
         self.successors = tuple(successors)
+        logging.info(f'Successors: {successors}')
 
     # ##################################################### DATA ######################################################
 
