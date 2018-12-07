@@ -240,7 +240,7 @@ class EBMS(rpyc.Service):
     def exposed_get(self, key):
         data = self.data.get(key, None)
         if data:
-            return data.to_tuple()
+            return data.to_tuple() if isinstance(data, Data) else data
 
         succ = self.exposed_find_successor(key)
 
@@ -248,15 +248,21 @@ class EBMS(rpyc.Service):
 
     # value param must be a 'pickled' object
     def exposed_set(self, key, value):
-        data = self.data.get(key, None)
-        logger.debug(f'Data inside exposed_set. data is {data}')
-        if data:
-            data[key] = pickle.loads(value)
-            logger.debug(f'Data inside exposed_set if. data is {data}')
+        if inbetween(self.exposed_predecessor()[0] + 1, self.exposed_identifier(), key):
+            logger.debug(f'Node {self.me} holds key {key}')
+            self.data[key] = pickle.loads(value)
+        else:
+            succ = self.exposed_find_successor(key)
+            self.remote_request(succ[1], 'set', key, value)
 
-        succ = self.exposed_find_successor(key)
-
-        self.remote_request(succ[1], 'set', key, value)
+        # data = self.data.get(key, None)
+        # logger.debug(f'Data inside exposed_set. data is {data}')
+        # if data:
+        #     data[key] = pickle.loads(value)
+        #     logger.debug(f'Data inside exposed_set if. data is {data}')
+        #     return
+        # succ = self.exposed_find_successor(key)
+        # self.remote_request(succ[1], 'set', key, value)
 
     # def exposed_save_data(self, data):
     #     try:
