@@ -1,5 +1,5 @@
 import hashlib
-import config
+from . import config
 
 
 class User:

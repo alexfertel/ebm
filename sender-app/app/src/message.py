@@ -159,7 +159,7 @@ class Message:
             # block['Subject'] = json.dumps(block.subject, separators=(',', ':'))  # Make it a json for ease of parsing
             block['From'] = f'{user.active_email}'
             block['To'] = addr
-            broker.enqueue(block)
+            broker.send(block)
 
             # for addr in addresses:
             # broker.send(addr, user, subject, str(block) + '##NumberOfBlocks##' + str(len(blocks)))

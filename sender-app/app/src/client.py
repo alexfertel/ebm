@@ -16,7 +16,7 @@ logger = logging.getLogger('CLIENT')
 
 
 class EBMC:
-    def __init__(self, client_email_addr, email_server, server_email_addr, pwd):
+    def __init__(self, client_email_addr, server_email_addr, email_server, pwd):
         """
         :param client_email_addr: email
         :param email_server: server

@@ -7,14 +7,13 @@ import os
 import smtplib
 import ssl
 import time
-from typing import List, Any
 
 import config
 import logging
 
 from .block import Block
 from .user import User
-from .decorators import thread
+from .decorators import *
 from imbox import Imbox
 from email.message import EmailMessage
 from .message import Message
@@ -40,6 +39,8 @@ class Broker:
         self.user_info_credetials = user_info_credetials
 
         self.fetch()  # Start a thread to fetch emails
+
+        # self.loop()  # Start a thread to process emails
 
     def __str__(self):
         queue = '*' * 25 + ' Queue ' + '*' * 25 + '\n' + f'{self._config_queue}' + '\n'
@@ -87,15 +88,15 @@ class Broker:
     @thread
     def fetch(self):
         while True:
-            imbox: List[Block] = list(map(lambda x: Block.block_from_imbox_msg(x),
-                                          self.recv(self.addr, self.user_info_credetials)))
+            imbox: list = list(map(lambda x: Block.block_from_imbox_msg(x),
+                                   Broker.recv(self.addr, self.user_info_credetials)))
             imbox = list(filter(lambda x: x is not None, imbox))
             self.enqueue(imbox)
             time.sleep(1)
 
     def process_data(self):
         # The broker received another block, so lets process it and see if it is part of the current message.
-        # The client should have used generate_block_id to create the identifier and it should come in the
+        # The client should have used generate_block_id selfto create the identifier and it should come in the
         # email Subject. Parse the email and get the Subject.
         block = self.dequeue_data()
 
@@ -117,6 +118,7 @@ class Broker:
         # See what message it belongs to, insert it and check the message's lifetime
         # Message.match_block_with_message(incoming_block, self.messages)
 
+    @retry
     def loop(self):
         while True:
             print(self)
@@ -160,8 +162,7 @@ class Broker:
 
         return items[0].message_id, items[0].subject['name']
 
-    @staticmethod
-    def send(addr, msg: EmailMessage):
+    def send(self, msg: EmailMessage):
         """
         This method contains the logic for sending an email, which comprises of:
         - Connect to the smtp server
@@ -176,7 +177,7 @@ class Broker:
         :param msg: Block
         :return: bool
         """
-        smtp: smtplib.SMTP = smtplib.SMTP(addr)  # smtp instance
+        smtp: smtplib.SMTP = smtplib.SMTP(self.addr)  # smtp instance
         smtp.set_debuglevel(1)
         smtp.send_message(msg)
         smtp.quit()
@@ -186,7 +187,7 @@ class Broker:
         """
         This method contains the logic for fetching the next batch of messages
         from the imap server.
-        :return: list[Block]
+        :return: list
         """
         ssl_context = ssl.create_default_context()
 
