@@ -20,6 +20,7 @@ class Message:
         self._id = message_id if message_id else Message.generate_message_id()
         self._subject = subject if subject else {}
         self._body = body if body else ''
+        self._blocks = []
         self._blocks = self.unwrap(self.body) if self.body else []
 
     def __len__(self):
