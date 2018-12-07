@@ -9,8 +9,8 @@ logger = logging.getLogger('DECORATOR')
 
 def loop(f, sleep_time, args, kwargs):
     while True:
-        f(*args, **kwargs)
         time.sleep(sleep_time)
+        f(*args, **kwargs)
 
 
 def retry(sleep_time=1):

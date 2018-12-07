@@ -1,19 +1,17 @@
 #!/usr/bin/env python3.6
 import config
-import fcntl
 import fire
 import hashlib
-import json
 import logging
 import pickle
 import random
 import rpyc
 import socket
 import string
-import struct
 
 from utils import inbetween
 from decorators import retry, retry_times
+from data import Data
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('SERVER')
@@ -37,9 +35,8 @@ class EBMS(rpyc.Service):
 
         self.failed_nodes = []  # list of successor nodes
 
-        # Init data file
-        with open('data.json', 'w+') as fd:
-            fd.write('{}')
+        # This server keys
+        self.data = {}
 
         logger.debug(f'Capture ip address of self on server: {self.exposed_identifier() % config.SIZE}')
         # Sets this server's ip address correctly :) Thanks stackoverflow!
@@ -174,6 +171,9 @@ class EBMS(rpyc.Service):
         logger.debug(f'Start updating successors of: {self.exposed_identifier()}')
         self.update_successors()
 
+        logger.debug(f'Start replicating data of: {self.exposed_identifier()}')
+        self.update_successors()
+
     # periodically verify n's immediate succesor,
     # and tell the exposed_successor about n.
     @retry(config.STABILIZATION_DELAY)
@@ -218,45 +218,48 @@ class EBMS(rpyc.Service):
         self.successors = tuple(successors)
 
     # ##################################################### DATA ######################################################
+
+    # Returned data will be a 'pickled' object
     def exposed_get(self, key):
         succ = self.exposed_find_successor(key)
 
         if succ[1] == self.addr:  # I'm responsible for this key
-            obj = self.exposed_load_json()[key]
-            return self.exposed_dumps(pickle, obj)
+            data = self.data.get(key, None)
+            if data:
+                return data.to_tuple()
 
         return self.remote_request(succ[1], 'get', key)
 
+    # value param must be a 'pickled' object
     def exposed_set(self, key, value):
-        node = self.exposed_find_successor(key)
-        dictionary = node.load()
-        dictionary[key] = value
-        node.save(dictionary)
+        succ = self.exposed_find_successor(key)
 
-    def exposed_save_json(self, dictionary: dict):
-        with open('data.json', 'w+') as fd:
-            self.exposed_dump(json, dictionary, fd)
+        if succ[1] == self.addr:  # I'm responsible for this key
+            data = self.data.get(key, None)
+            if data:
+                data[key] = pickle.loads(value)
+        else:
+            self.remote_request(succ[1], 'set', key, value)
 
-    def exposed_load_json(self):
-        with open('data.json', 'r+') as fd:
-            return self.exposed_load(json, fd)
+    # def exposed_save_data(self, data):
+    #     try:
+    #         with open('data.pickle', 'xb') as fd:
+    #             pickle.dump(data, fd)
+    #     except:
+    #         with open('data.pickle', 'w+b') as fd:
+    #             pickle.dump(data, fd)
 
-    def exposed_dump(self, serializer, obj, fd):
-        serializer.dump(obj, fd)
-
-    def exposed_dumps(self, serializer, obj):
-        return serializer.dumps(obj)
-
-    def exposed_load(self, serializer, fd):
-        return serializer.load(fd)
-
-    def exposed_loads(self, serializer, obj):
-        return serializer.loads(obj)
+    # def exposed_load_data(self):
+    #     with open('data.pickle', 'rb') as fd:
+    #         return pickle.load(fd)
 
     # ################################################## REPLICATION ###################################################
-    # This should move keys to a new and delete them
-    def move(self):
-        pass
+    # This should periodically move keys to a new node
+    @retry(config.REPLICATION_DELAY)
+    def replicate(self):
+        i = random.randint(0, len(self.successors))
+        for k, v in self.data.items():
+            self.remote_request(self.successors[i][1], 'set', k, v)
 
 
 def main(server_email_addr: str = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6)),
