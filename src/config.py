@@ -31,4 +31,5 @@ TOPICS = {
     'UNSUBSCRIPTION': 5,
     'CMD': 6,
     'ANSWER': 7,
+    'CREATE': 8,
 }

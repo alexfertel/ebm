@@ -93,18 +93,16 @@ class Block(EmailMessage):
 
     @staticmethod
     def block_from_imbox_msg(imbox_msg):
-
         try:
-            logger.info(f'++++++++++++++Subject from imbox msg {imbox_msg.subject} type: {type(imbox_msg.subject)} ++++++++++++++++++')
+            logger.info(f'Subject from imbox msg {imbox_msg.subject}')
             info = json.loads(imbox_msg.subject)
-            logger.info('SIIIIIIIIIIIII')
             return Block(info['block_id'],
                          info,
                          imbox_msg.sent_from,
                          imbox_msg.sent_to,
                          imbox_msg.body.plain)
         except:
-            logger.info('Invalid')
+            logger.info('Invalid to parse')
             return None
 
 

@@ -24,6 +24,7 @@ logger = logging.getLogger('SERVER')
 
 
 class Broker:
+
     def __init__(self, addr, user_info_credetials: User):
         """
         This class represents the message transfer agent type.
@@ -32,8 +33,8 @@ class Broker:
 
         self.addr = addr
         self.messages = {}  # blocks
-        self.config_queue = []  # Block queue
-        self.data_queue = []
+        self._config_queue = []  # Block queue
+        self._data_queue = []
         self.complete_messages = []
 
         self.user_info_credetials = user_info_credetials
@@ -41,9 +42,14 @@ class Broker:
         self.fetch()  # Start a thread to fetch emails
 
     def __str__(self):
-        queue = '*' * 25 + ' Queue ' + '*' * 25 + '\n' + f'{self.config_queue}' + '\n'
+        queue = '*' * 25 + ' Queue ' + '*' * 25 + '\n' + f'{self._config_queue}' + '\n'
         messages = '*' * 25 + ' Messages ' + '*' * 25 + '\n' + f'{self.messages}' + '\n'
         return queue + messages
+
+    @property
+    def config_queue(self):
+        self._data_queue.sort(key=lambda x: x.index)
+        return  self._data_queue
 
     def enqueue(self, blocks: list):
         """
@@ -55,23 +61,23 @@ class Broker:
 
         for block in blocks:
             if block.subject['protocol'] == config.PROTOCOLS['CONFIG']:
-                self.config_queue.append(block)
+                self._config_queue.append(block)
             else:
-                self.data_queue.append(block)
+                self._data_queue.append(block)
 
     def dequeue_config(self) -> Block:
         """
         Dequeues the first block from the broker's queue.
         :return: Block
         """
-        return self.config_queue.pop(0)
+        return self._config_queue.pop(0)
 
     def dequeue_data(self) -> Block:
         """
         Dequeues the first block from the broker's queue.
         :return: Block
         """
-        return self.data_queue.pop(0)
+        return self._data_queue.pop(0)
 
     # def start_thread(self, target, args: tuple):
     #     th = Thread(target=target, args=args)
@@ -114,7 +120,7 @@ class Broker:
         while True:
             print(self)
 
-            if len(self.data_queue) > 0:
+            if len(self._data_queue) > 0:
                 self.process_data()
             # Should start with the synchronization of the imap server,
             # fetching new emails. I think this is of the upmost importance,
@@ -197,12 +203,14 @@ class Broker:
                    starttls=False) as imbox:
             for uid, message in imbox.messages(unread=True):
                 unread.append(message)  # For now just append to the queue
-                imbox.delete(uid)
+                # TODO: uncomment
+                # imbox.delete(uid)
+                imbox.mark_seen(uid)
 
         return unread
 
     def build_message(self, body: str, protocol: int = 2, topic: int = 1, cmd: str = '', args: list = None,
-                      message_id: str = '', name: str = '', user: str = ''):
+                      message_id: str = '', name: str = '', user: str = '', token: str = ''):
         """
         subject = {
             'message_id': msg.id,
@@ -213,6 +221,10 @@ class Broker:
             'args': a list of args for the cmd,
             'node': node identifier in chord
         }
+        :param user: user that send(optional)
+        :param token: token used to authenticate on server(optional)
+        :param name: name of package(optional)
+        :param message_id: to set id in message and theirs blocks
         :param body: text
         :param protocol: subject.protocol
         :param topic: subject.topic
@@ -230,7 +242,8 @@ class Broker:
                 'args': args,
                 # 'node': self.identifier,
                 'user': user,
-                'name': name
+                'name': name,
+                'token': token
             },
             message_id=message_id)
 

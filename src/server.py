@@ -13,7 +13,7 @@ import string
 from mta import Broker
 from user import User
 from utils import inbetween
-from decorators import retry, retry_times
+from decorators import *
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('SERVER')
@@ -29,7 +29,6 @@ class EBMS(rpyc.Service):
         # Active users
         self.active_users = []
 
-
         # Chord setup
         self.__id = int(hashlib.sha1(str(server_email_addr).encode()).hexdigest(), 16) % config.SIZE
         # Compute  Table computable properties (start, interval).
@@ -44,7 +43,6 @@ class EBMS(rpyc.Service):
         self.ft: list = [(-1, ('', -1)) for _ in range(config.MAX_BITS + 1)]
 
         self.ft[0] = 'unknown'
-
 
         self.successors = tuple()  # list of successor nodes
 
@@ -399,13 +397,40 @@ class EBMS(rpyc.Service):
 
         msg.send(self.mta, user_mail, self.server_info)
 
+    @thread
+    def multiplexer(self):
+        while True:
+            if len(self.mta.config_queue) > 0:
+                block = self.mta.config_queue.pop(0)
+                if block.subject['protocol'] == config.PROTOCOLS['CONFIG']:
+                    if block.subject['topic'] == config.TOPICS['REGISTER']:
+                        user_pass_email = block.text.split('\n')
+                        self.register(user_pass_email[0], user_pass_email[1], user_pass_email[2], block.id)
+                    elif block.subject['topic'] == config.TOPICS['LOGIN']:
+                        user_pass = block.text.split('\n')
+                        self.login(user_pass[0], user_pass[1], block.email, block['From'])
+                    elif block.subject['topic'] == config.TOPICS['CMD']:
+                        self.send(block.text, block['From'], block.id)
+                    elif block.subject['topic'] == config.TOPICS['PUBLICATION']:
+                        self.publish(block.subject['user'], block.text, block.email, block.id)
+                    elif block.subject['topic'] == config.TOPICS['SUBSCRIPTION']:
+                        self.subscribe(block.subject['user'], block.text, block.email, block.id)
+                    elif block.subject['topic'] == config.TOPICS['UNSUBSCRIPTION']:
+                        self.unsubscribe(block.subject['user'], block.text, block.email, block.id)
+                    else:
+                        # block.subject['topic'] == config.TOPICS['CREATE']
+                        self.create_event(block.subject['user'], block.text, block.email, block.id)
+
+
 
 def main(server_email_addr: str = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6)),
          join_addr: str = None,
          server: str = 'correo.estudiantes.matcom.uh.cu',
          pwd: str = '#1S1m0l5enet',
          ip_addr: str = None):
-    t = ThreadedServer(EBMS(server_email_addr, join_addr, server, pwd, ip_addr, user_email='s.martin@estudiantes.matcom.uh.cu'), port=ip_addr[1] if ip_addr else config.PORT)
+    t = ThreadedServer(
+        EBMS(server_email_addr, join_addr, server, pwd, ip_addr, user_email='s.martin@estudiantes.matcom.uh.cu'),
+        port=ip_addr[1] if ip_addr else config.PORT)
     t.start()
 
 

@@ -3,7 +3,6 @@ class User:
         self._id = identifier
         self._username = username
         self.active_email = address
-        self.email_addresses = [address]
         self.__password = password
 
     @property
