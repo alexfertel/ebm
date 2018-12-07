@@ -129,7 +129,7 @@ class Message:
     def send(self,
              broker,
              addr: str,
-             user: User = User('id', 'myemail@test.com', 'usr', 'passw')):
+             user: User):
         """
         This methods represents the process of sending this message,
         which is unwrapping it (unwrap method) and enqueueing it.

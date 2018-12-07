@@ -1,17 +1,16 @@
+import hashlib
+import config
+
+
 class User:
-    def __init__(self, identifier, address, username, password):
-        self._id = identifier
-        self._username = username
+    def __init__(self, address, password):
+        self.__id = int(hashlib.sha1(str(address).encode()).hexdigest(), 16) % config.SIZE
         self.active_email = address
         self.__password = password
 
     @property
     def id(self):
-        return self._id
-
-    @property
-    def username(self):
-        return self._username
+        return self.__id
 
     @property
     def password(self):

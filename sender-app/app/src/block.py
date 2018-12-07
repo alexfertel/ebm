@@ -39,8 +39,7 @@ class Block(EmailMessage):
         return str(self)
 
     def __str__(self):
-        return f'Block: {self._id} from Message: {self.message.id}' + '\n\t\t' \
-               + f'Subject:{self.subject}'
+        return f'Block: {self._id}' + '\n\t\t' + f'Subject:{self.subject}'
 
     def set_message(self, msg):
         self._message = msg

@@ -49,7 +49,7 @@ class Broker:
     @property
     def config_queue(self):
         self._data_queue.sort(key=lambda x: x.index)
-        return  self._data_queue
+        return self._data_queue
 
     def enqueue(self, blocks: list):
         """
@@ -61,7 +61,7 @@ class Broker:
 
         for block in blocks:
             logger.info(f'{block}')
-            if block.subject.get('protocol', None) and block.subject['protocol'] == config.PROTOCOLS['CONFIG']:
+            if block.subject.get('protocol', None) == config.PROTOCOLS['CONFIG']:
                 self._config_queue.append(block)
             else:
                 self._data_queue.append(block)
@@ -197,7 +197,7 @@ class Broker:
         unread = []
         logger.debug(f'Imbox will try to connect to address: {addr}')
         with Imbox(addr,
-                   username=user.username,
+                   username=user.active_email,
                    password=user.password,
                    ssl=True,
                    ssl_context=ssl_context,
