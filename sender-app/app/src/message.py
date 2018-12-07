@@ -155,7 +155,8 @@ class Message:
 
         # Enqueue each of the blocks of self as EmailMessage instances
         for block in self.blocks:
-            block['Subject'] = json.dumps(block.subject, separators=(',', ':'))  # Make it a json for ease of parsing
+            logger.info(f'{block.message}')
+            # block['Subject'] = json.dumps(block.subject, separators=(',', ':'))  # Make it a json for ease of parsing
             block['From'] = f'{user.active_email}'
             block['To'] = addr
             broker.enqueue(block)
