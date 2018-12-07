@@ -282,7 +282,7 @@ class EBMS(rpyc.Service):
     def replicate(self):
         i = random.randint(0, len(self.successors))
         for k, v in self.data.items():
-            self.remote_request(self.successors[i][1], 'set', k, v)
+            self.remote_request(self.successors[i][1], 'set', k, pickle.dumps(v))
 
 
 def main(server_email_addr: str = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6)),
