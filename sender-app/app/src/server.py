@@ -409,7 +409,7 @@ class EBMS(rpyc.Service):
             msg = self.mta.build_message(user_id, protocol=config.config.PROTOCOLS['CONFIG'],
                                          topic=config.TOPICS['LOGIN'], message_id=message_id)
         else:
-            msg = self.mta.build_message('ERROR AUTHENTICATION', protocol=config.config.PROTOCOLS['CONFIG'],
+            msg = self.mta.build_message('', protocol=config.config.PROTOCOLS['CONFIG'],
                                          topic=config.TOPICS['LOGIN'], message_id=message_id)
 
         msg.send(self.mta, user_mail, self.server_info)

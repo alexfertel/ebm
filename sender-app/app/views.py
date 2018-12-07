@@ -3,6 +3,7 @@ from werkzeug.utils import secure_filename
 from config import UPLOAD_FOLDER, TOKEN
 from . import utils
 import os
+import time
 
 # from src.client import EBMC
 
@@ -40,10 +41,15 @@ def upload_file():
 
 @view.route('/login', methods=['POST'])
 def login():
+    ebmc.login(request.form['email'],request.form['pass'])
     # token = ebm.login(request.form['email'],request.form['pass'])
-    # if token:
-    #     TOKEN = token
-    #     return redirect('/')
+    start = time.time()
+    while True:
+        if ebmc.token:
+            TOKEN = token
+            return redirect('/')
+        if time.time() - start > 40:
+            break
 
     # TODO: ebm.login debe retornar el token de  usuario que se acaba de logear, 
     # de lo contrario 0, o algo por el estilo
@@ -53,7 +59,8 @@ def login():
 @view.route('/sing-up', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        # ebm.login(request.form['email'],request.form['pass'])
+        ebmc.register(request.form['email'], request.form['pass'])
+
         return redirect('/')
     return render_template('register.html')
 
@@ -61,14 +68,16 @@ def register():
 @view.route('/subscribe', methods=['POST'])
 def subscribe():
     # ebm.subscribe(request.form['event'], TOKEN)
-    # TODO: ver bien que retorna este metodo, si no hace nada, entonce se queda asi
+    ebmc.subscribe(request.form['event'])
     # hay q hacer un unsubscribe
     return redirect('/')
 
 
 @view.route('/create-event', methods=['POST'])
 def create_event():
-    # TODO: ver si implementar esto, 
+    # TODO: ver si implementar esto,
+    ebmc.create_event(request.form['event'])
+
     return redirect('/')
 
 
