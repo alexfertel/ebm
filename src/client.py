@@ -20,19 +20,19 @@ from .user import User
 
 
 class EBMC:
-    def __init__(self, user, client_email_addr, server_addr, pwd):
+    def __init__(self, client_email_addr, email_server, server_email_addr, pwd):
         """
-        :param user: user to login in server
         :param client_email_addr: email
-        :param server_addr: server
+        :param email_server: server
         :param pwd: password
         """
-        self.server_addr = server_addr
+        self.server_email_addr = server_email_addr
+        self.email_server = email_server
         self.id = -1
 
-        self.server_info = User(user, client_email_addr, user, pwd)
+        self.user_info = User(client_email_addr, pwd)
 
-        self.mta: Broker = Broker(server_addr, self.server_info)
+        self.mta: Broker = Broker(email_server, self.user_info)
 
         self.user = ''
         self.token = ''
@@ -42,8 +42,8 @@ class EBMC:
     # returns an ID
     @thread
     def register(self, user, password):
-        msg = self.mta.build_message(body=f'{user}\n{password}\n{self.server_info.active_email}', protocol=PROTOCOLS['CONFIG'], topic=TOPICS['REGISTER'])
-        msg.send(self.mta, self.server_addr)
+        msg = self.mta.build_message(body=f'{user}\n{password}\n{self.user_info.active_email}', protocol=PROTOCOLS['CONFIG'], topic=TOPICS['REGISTER'])
+        msg.send(self.mta, self.server_email_addr)
 
         item = None
         while not item:
@@ -56,7 +56,7 @@ class EBMC:
     @thread
     def login(self, user, password):
         msg = self.mta.build_message(body=f'{user}\n{password}', protocol=PROTOCOLS['CONFIG'], topic=TOPICS['LOGIN'])
-        msg.send(self.mta, self.server_addr)
+        msg.send(self.mta, self.server_email_addr)
 
         item = None
         while not item:
@@ -69,12 +69,12 @@ class EBMC:
     @thread
     def send(self, user: str, data: str, name: str):
         """"
-        :param user:  user to send
-        :param data:
+        :param user: user to send
+        :param data: data
         :param name: name of package
         """
         msg = self.mta.build_message(body=f'{user}', protocol=PROTOCOLS['CONFIG'], topic=TOPICS['CMD'])
-        msg.send(self.mta, self.server_addr)
+        msg.send(self.mta, self.server_email_addr)
         item = None
         while not item:
             item = in_queue(msg.id, copy.deepcopy(self.mta.config_queue))
@@ -95,7 +95,7 @@ class EBMC:
         :param name: name of package
         """
         msg = self.mta.build_message(body=event, protocol=PROTOCOLS['CONFIG'], topic=TOPICS['PUBLICATION'])
-        msg.send(self.mta, self.server_addr)
+        msg.send(self.mta, self.server_email_addr)
         item = None
         while not item:
             item = in_queue(msg.id, copy.deepcopy(self.mta.config_queue))
@@ -112,17 +112,17 @@ class EBMC:
     @thread
     def create_event(self, name: str):
         msg = self.mta.build_message(body=name, protocol=PROTOCOLS['CONFIG'], topic=TOPICS['CREATE'], token=self.token)
-        msg.send(self.mta, self.server_addr)
+        msg.send(self.mta, self.server_email_addr)
 
     @thread
     def subscribe(self, event: str):
         msg = self.mta.build_message(body=event, protocol=PROTOCOLS['CONFIG'], topic=TOPICS['SUBSCRIPTION'], token=self.token)
-        msg.send(self.mta, self.server_addr)
+        msg.send(self.mta, self.server_email_addr)
 
     @thread
     def unsubscribe(self, event: str):
         msg = self.mta.build_message(body=event, protocol=PROTOCOLS['CONFIG'], topic=TOPICS['UNSUBSCRIPTION'], token=self.token)
-        msg.send(self.mta, self.server_addr)
+        msg.send(self.mta, self.server_email_addr)
 
     @property
     def recived(self) -> tuple:

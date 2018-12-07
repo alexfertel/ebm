@@ -1,6 +1,5 @@
 #!/usr/bin/env python3.6
 import config
-import copy
 import fire
 import hashlib
 import logging
@@ -22,11 +21,10 @@ logger = logging.getLogger('SERVER')
 
 class EBMS(rpyc.Service):
     def __init__(self, server_email_addr: str,
-                 join_addr: str,
-                 server: str,
                  pwd: str,
-                 ip_addr: str,
-                 user_email: str = ''):
+                 email_server: str,
+                 join_addr: tuple,
+                 ip_addr: tuple):
         # Active users
         self.active_users = []
 
@@ -34,10 +32,10 @@ class EBMS(rpyc.Service):
         self.__id = int(hashlib.sha1(str(server_email_addr).encode()).hexdigest(), 16) % config.SIZE
         # Compute  Table computable properties (start, interval).
 
-        self.server_info = User(self.exposed_identifier(), server_email_addr, user_email, pwd)
+        self.server_info = User(server_email_addr, pwd)
 
         # Setup broker
-        self.mta = Broker(server, self.server_info)
+        self.mta = Broker(email_server, self.server_info)
 
         # The  property is computed when a joins or leaves and at the chord start
         logger.debug(f'Initializing fingers on server: {self.exposed_identifier() % config.SIZE}')
@@ -467,7 +465,27 @@ def main(server_email_addr: str = ''.join(random.choices(string.ascii_lowercase 
          pwd: str = '#1S1m0l5enet',
          ip_addr: str = None):
     t = ThreadedServer(
-        EBMS(server_email_addr, join_addr, server, pwd, ip_addr, user_email='s.martin@estudiantes.matcom.uh.cu'),
+        EBMS(server_email_addr, join_addr, server, pwd, ip_addr),
+        port=ip_addr[1] if ip_addr else config.PORT)
+    t.start()
+
+
+def deploy(server_email_addr: str,
+           pwd: str,
+           email_server: str,
+           join_addr: tuple = None,
+           ip_addr: tuple = None):
+    """
+    Method exposing EBMS instance
+    :param server_email_addr: The server email address (ebms@gmail.com)
+    :param pwd: The password for the server_email_address (ebmspassword)
+    :param email_server: The email server handling an MX DNS record (correo.estudiantes.matcom.uh.cu)
+    :param join_addr: The chord node to join address (('10.6.98.41'), 18861). In case of being None, this is the first chord node
+    :param ip_addr: The server ip address. This is useful when testing in localhost, or in a dockerized environment
+    :return: None
+    """
+    t = ThreadedServer(
+        EBMS(server_email_addr, pwd, email_server, join_addr, ip_addr),
         port=ip_addr[1] if ip_addr else config.PORT)
     t.start()
 
@@ -476,24 +494,4 @@ if __name__ == "__main__":
     from rpyc.utils.server import ThreadedServer
 
     # import sys
-    fire.Fire(main)
-
-    # print(len(sys.argv))
-    # if len(sys.argv) < 2:
-    #     print('Usage: ./server.py <email_address> <ip_address>')
-    #     logger.debug(f'Initializing ThreadedServer with default values: a.fertel@correo.estudiantes.matcom.uh.cu'
-    #                  f' and 10.6.98.49.')
-    #     t = ThreadedServer(EBMS(), port=config.PORT)
-    # elif len(sys.argv) == 2:
-    #     logger.debug(f'Initializing ThreadedServer with default email address: a.fertel@correo.estudiantes.matcom.uh.cu'
-    #                  f' and ip address: {sys.argv[1]}')
-    #     t = ThreadedServer(EBMS(ip_addr=sys.argv[1]), port=config.PORT)
-    # elif len(sys.argv) == 3:
-    #     logger.debug(f'Initializing ThreadedServer with default email address: a.fertel@correo.estudiantes.matcom.uh.cu'
-    #                  f' and ip address: {sys.argv[1]}')
-    #     t = ThreadedServer(EBMS(sys.argv[1], sys.argv[2]), port=config.PORT)
-    # else:
-    #     logger.debug(f'Initializing ThreadedServer with email address: {sys.argv[1]}, join address: {sys.argv[2]}'
-    #                  f' and ip address: {sys.argv[3]}')
-    #     t = ThreadedServer(EBMS(sys.argv[1], sys.argv[2], sys.argv[3]), port=config.PORT)
-    # t.start()
+    fire.Fire(deploy)

@@ -196,7 +196,7 @@ class Broker:
         unread = []
         logger.debug(f'Imbox will try to connect to address: {addr}')
         with Imbox(addr,
-                   username=user.username,
+                   username=user.active_email,
                    password=user.password,
                    ssl=True,
                    ssl_context=ssl_context,
