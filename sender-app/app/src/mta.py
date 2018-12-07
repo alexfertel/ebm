@@ -232,7 +232,7 @@ class Broker:
         :param args: subject.args
         :return: Message
         """
-
+        logger.info(f'build_message: {message_id}')
         msg = Message(
             body=body,
             subject={
