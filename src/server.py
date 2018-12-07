@@ -272,6 +272,7 @@ class EBMS(rpyc.Service):
             # Ours should have correct state of the keys, successors may not have correct replicas
             current_data.update(data)
 
+            data = current_data
             current_node = self.remote_request(current_node[1], 'successor')
 
         return pickle.dumps(data)
