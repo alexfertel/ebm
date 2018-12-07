@@ -46,7 +46,7 @@ class EBMC:
         )
         logger.info(f'User: {user} Pass: {password} Server {self.server_email_addr}')
         logger.info(f'Msg is: {msg}')
-        msg.send(self.mta, self.server_email_addr)
+        msg.send(self.mta, self.server_email_addr, self.user_info)
 
         item = None
         while not item:
@@ -59,7 +59,7 @@ class EBMC:
     @thread
     def login(self, user, password):
         msg = self.mta.build_message(body=f'{user}\n{password}', protocol=PROTOCOLS['CONFIG'], topic=TOPICS['LOGIN'])
-        msg.send(self.mta, self.server_email_addr)
+        msg.send(self.mta, self.server_email_addr, self.user_info)
 
         item = None
         while not item:
@@ -77,7 +77,7 @@ class EBMC:
         :param name: name of package
         """
         msg = self.mta.build_message(body=f'{user}', protocol=PROTOCOLS['CONFIG'], topic=TOPICS['CMD'])
-        msg.send(self.mta, self.server_email_addr)
+        msg.send(self.mta, self.server_email_addr, self.user_info)
         item = None
         while not item:
             item = in_queue(msg.id, copy.deepcopy(self.mta.config_queue))
@@ -98,7 +98,7 @@ class EBMC:
         :param name: name of package
         """
         msg = self.mta.build_message(body=event, protocol=PROTOCOLS['CONFIG'], topic=TOPICS['PUBLICATION'])
-        msg.send(self.mta, self.server_email_addr)
+        msg.send(self.mta, self.server_email_addr, self.user_info)
         item = None
         while not item:
             item = in_queue(msg.id, copy.deepcopy(self.mta.config_queue))
@@ -115,18 +115,18 @@ class EBMC:
     @thread
     def create_event(self, name: str):
         msg = self.mta.build_message(body=name, protocol=PROTOCOLS['CONFIG'], topic=TOPICS['CREATE'], token=self.token)
-        msg.send(self.mta, self.server_email_addr)
+        msg.send(self.mta, self.server_email_addr, self.user_info)
 
     @thread
     def subscribe(self, event: str):
         msg = self.mta.build_message(body=event, protocol=PROTOCOLS['CONFIG'], topic=TOPICS['SUBSCRIPTION'], token=self.token)
-        msg.send(self.mta, self.server_email_addr)
+        msg.send(self.mta, self.server_email_addr, self.user_info)
 
 
     @thread
     def unsubscribe(self, event: str):
         msg = self.mta.build_message(body=event, protocol=PROTOCOLS['CONFIG'], topic=TOPICS['UNSUBSCRIPTION'], token=self.token)
-        msg.send(self.mta, self.server_email_addr)
+        msg.send(self.mta, self.server_email_addr, self.user_info)
 
     @property
     def recived(self) -> tuple:
