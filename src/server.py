@@ -31,6 +31,8 @@ class EBMS(rpyc.Service):
 
         self.ft[0] = 'unknown'
 
+        self.me = self.exposed_identifier(), self.addr
+
         self.successors = tuple()  # list of successor nodes
 
         self.failed_nodes = []  # list of successor nodes
@@ -76,7 +78,7 @@ class EBMS(rpyc.Service):
             if (key, addr) in self.failed_nodes:
                 logger.info(f'Server with address: {addr} was down. Execute remote join.')
                 self.failed_nodes.remove((key, addr))
-                self.remote_request(addr, 'join', (self.exposed_identifier(), self.addr))
+                self.remote_request(addr, 'join', self.me)
             return True
         except:
             logger.error(f'Server with address: {addr} is down.')
@@ -100,7 +102,7 @@ class EBMS(rpyc.Service):
         candidates = [self.ft[1]] + list(self.successors)
 
         if len(candidates) == 0:  # Trying to fix fingers without having stabilized
-            return self.exposed_identifier(), self.addr
+            return self.me
 
         for index, n in enumerate(candidates):
             logger.debug(f'Successor {index} in server: {self.exposed_identifier()} is {n}')
@@ -108,7 +110,7 @@ class EBMS(rpyc.Service):
                 return n
         else:
             logger.error(f'There is no online successor, thus we are our successor')
-            return self.exposed_identifier(), self.addr
+            return self.me
 
     def exposed_get_successors(self):
         return self.successors
@@ -122,7 +124,7 @@ class EBMS(rpyc.Service):
                      f'on server: {self.exposed_identifier() % config.SIZE}')
 
         if self.ft[0] != 'unknown' and inbetween(self.ft[0][0] + 1, self.exposed_identifier(), identifier):
-            return self.exposed_identifier(), self.addr
+            return self.me
 
         n_prime = self.exposed_find_predecessor(identifier)
         return self.remote_request(n_prime[1], 'successor')
@@ -130,11 +132,11 @@ class EBMS(rpyc.Service):
     def exposed_find_predecessor(self, identifier):
         logger.debug(
             f'Calling exposed_find_predecessor({identifier % config.SIZE}) on server: {self.exposed_identifier() % config.SIZE}')
-        n_prime = (self.exposed_identifier(), self.addr)
+        n_prime = self.me
         succ = self.exposed_successor()
 
         if succ[0] == self.exposed_identifier():
-            return self.exposed_identifier(), self.addr
+            return self.me
 
         while not inbetween(n_prime[0] + 1, succ[0] + 1, identifier):
             n_prime = self.remote_request(n_prime[1], 'closest_preceding_finger', identifier)
@@ -151,7 +153,7 @@ class EBMS(rpyc.Service):
         succ = self.exposed_successor()
         return succ \
             if inbetween(self.exposed_identifier() + 1, exposed_identifier - 1, succ[0]) \
-            else self.addr
+            else self.me
 
     # # n joins the network;
     # # n' is an arbitrary in the network
@@ -163,7 +165,7 @@ class EBMS(rpyc.Service):
             self.ft[1] = finger
         else:  # n is the only in the network
             logger.debug(f'First of the network -> server: {self.exposed_identifier()}')
-            self.ft[1] = (self.exposed_identifier(), self.addr)
+            self.ft[1] = self.me
 
         logger.debug(f'Successful join of: {self.exposed_identifier()} to chord')
 
@@ -190,7 +192,7 @@ class EBMS(rpyc.Service):
         if x and x != 'unknown' and inbetween(self.exposed_identifier() + 1, succ[0] - 1, x[0]) and self.is_online(*x):
             self.ft[1] = x
 
-        self.remote_request(self.exposed_successor()[1], 'notify', (self.exposed_identifier(), self.addr))
+        self.remote_request(self.exposed_successor()[1], 'notify', (self.me))
 
     # n' thinks it might be our exposed_predecessor.
     def exposed_notify(self, n_prime_key_addr: tuple):
