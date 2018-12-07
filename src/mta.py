@@ -49,7 +49,7 @@ class Broker:
     @property
     def config_queue(self):
         self._data_queue.sort(key=lambda x: x.index)
-        return  self._data_queue
+        return self._data_queue
 
     def enqueue(self, blocks: list):
         """
@@ -60,6 +60,7 @@ class Broker:
         # TODO: clasificar los msj
 
         for block in blocks:
+            # logger.debug(f'Block {block} Subject {block.subject}')
             if block.subject['protocol'] == config.PROTOCOLS['CONFIG']:
                 self._config_queue.append(block)
             else:
