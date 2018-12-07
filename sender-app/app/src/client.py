@@ -2,11 +2,11 @@
 import copy
 import time
 
-from src.mta import Broker
-from src.decorators import thread
-from src.config import PROTOCOLS, TOPICS
-from src.utils import *
-from src.user import User
+from .mta import Broker
+from .decorators import thread
+from .config import PROTOCOLS, TOPICS
+from .utils import *
+from .user import User
 
 
 # self, server_email_addr: str,
