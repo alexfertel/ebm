@@ -145,10 +145,13 @@ class EBMS(rpyc.Service):
     # return closest preceding finger (id, ip)
     def exposed_closest_preceding_finger(self, exposed_identifier):
         for i in reversed(range(1, len(self.ft))):
-            if inbetween(self.exposed_identifier() + 1, exposed_identifier - 1, self.ft[i][0]):
+            if self.ft[i] != (-1, ('', -1)) and inbetween(self.exposed_identifier() + 1, exposed_identifier - 1, self.ft[i][0]):
                 # Found responsible for next iteration
                 return self.ft[i]
-        return self.exposed_identifier(), self.addr
+        succ = self.exposed_successor()
+        return succ \
+            if inbetween(self.exposed_identifier() + 1, exposed_identifier - 1, succ[0]) \
+            else self.addr
 
     # # n joins the network;
     # # n' is an arbitrary in the network
@@ -226,28 +229,25 @@ class EBMS(rpyc.Service):
 
     # Returned data will be a 'pickled' object
     def exposed_get(self, key):
-        succ = self.exposed_find_successor(key)
+        data = self.data.get(key, None)
+        if data:
+            return data.to_tuple()
 
-        if succ[1] == self.addr:  # I'm responsible for this key
-            data = self.data.get(key, None)
-            if data:
-                return data.to_tuple()
-            return None
+        succ = self.exposed_find_successor(key)
 
         return self.remote_request(succ[1], 'get', key)
 
     # value param must be a 'pickled' object
     def exposed_set(self, key, value):
+        data = self.data.get(key, None)
+        logger.debug(f'Data inside exposed_set. data is {data}')
+        if data:
+            data[key] = pickle.loads(value)
+            logger.debug(f'Data inside exposed_set if. data is {data}')
+
         succ = self.exposed_find_successor(key)
-        logger.debug(f'Getting the successor inside exposed_set. succ is {succ}')
-        if succ[1] == self.addr:  # I'm responsible for this key
-            data = self.data.get(key, None)
-            logger.debug(f'Data inside exposed_set. data is {data}')
-            if data:
-                data[key] = pickle.loads(value)
-                logger.debug(f'Data inside exposed_set if. data is {data}')
-        else:
-            self.remote_request(succ[1], 'set', key, value)
+
+        self.remote_request(succ[1], 'set', key, value)
 
     # def exposed_save_data(self, data):
     #     try:
