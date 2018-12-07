@@ -23,7 +23,7 @@ class Message:
         self._blocks = self.unwrap(self.body) if self.body else []
 
     def __len__(self):
-        return len(self._blocks)
+        return len(self.blocks)
 
     def __repr__(self):
         representation = f'\nMessage:\n\tID: {self._id}\n\tBlocks: [\n\t\t'
