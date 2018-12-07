@@ -54,6 +54,7 @@ class EBMC:
             topic=TOPICS['REGISTER']
         )
         logger.info(f'User: {user} Pass: {password} Server {self.server_addr}')
+        logger.info(f'Msg is: {msg}')
         msg.send(self.mta, self.server_addr)
 
         item = None

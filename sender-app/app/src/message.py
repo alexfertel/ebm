@@ -21,7 +21,7 @@ class Message:
         self._subject = subject if subject else {}
         self._body = body if body else ''
         self._blocks = []
-        self._blocks = self.unwrap(self.body) if self.body else []
+        self.unwrap(self.body)
 
     def __len__(self):
         return len(self._blocks)
