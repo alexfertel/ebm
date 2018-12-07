@@ -10,8 +10,10 @@ import rpyc
 import socket
 import string
 
+from mta import Broker
+from user import User
 from utils import inbetween
-from decorators import retry, retry_times
+from decorators import *
 from data import Data
 
 logging.basicConfig(level=logging.DEBUG)
@@ -21,11 +23,22 @@ logger = logging.getLogger('SERVER')
 class EBMS(rpyc.Service):
     def __init__(self, server_email_addr: str,
                  join_addr: str,
-                 ip_addr: str):
+                 server: str,
+                 pwd: str,
+                 ip_addr: str,
+                 user_email: str = ''):
+        # Active users
+        self.active_users = []
 
         # Chord setup
         self.__id = int(hashlib.sha1(str(server_email_addr).encode()).hexdigest(), 16) % config.SIZE
         # Compute  Table computable properties (start, interval).
+
+        self.server_info = User(self.exposed_identifier(), server_email_addr, user_email, pwd)
+
+        # Setup broker
+        self.mta = Broker(server, self.server_info)
+
         # The  property is computed when a joins or leaves and at the chord start
         logger.debug(f'Initializing fingers on server: {self.exposed_identifier() % config.SIZE}')
         self.ft: list = [(-1, ('', -1)) for _ in range(config.MAX_BITS + 1)]
@@ -56,6 +69,8 @@ class EBMS(rpyc.Service):
         logger.debug(f'Starting join of server: {self.exposed_identifier()}')
         self.exposed_join(join_addr)  # Join chord
         logger.debug(f'Ended join of server: {self.exposed_identifier()}')
+
+        self.multiplexer()
 
     # @retry_times(config.RETRY_ON_FAILURE_TIMES)
     def remote_request(self, addr, method, *args):
@@ -285,11 +300,175 @@ class EBMS(rpyc.Service):
         for k, v in self.data.items():
             self.remote_request(self.successors[i][1], 'set', k, pickle.dumps(v))
 
+    # ####################################################### MQ #######################################################
+    def subscribe(self, subscriber: str, event: str, email_client: str, message_id: str):
+        """
+            This method represents a subscription.
+            :param subscriber: str
+            :param event: str
+            :param email_client: str
+            :param message_id: str
+            :return: None
+            """
+        # TODO: ver como retorna los objetos el self.get
+        subscription_list_id = hashlib.sha1(event.encode()).hexdigest()
+        subscription_list = Data.from_tuple(pickle.loads(self.exposed_get(subscription_list_id)))
+        if subscription_list:
+            user_id = hashlib.sha1(subscriber.encode()).hexdigest()
+            subscription_list['list'].push(user_id)
+            subscription_list = pickle.dumps(subscription_list)
+            self.exposed_set(subscription_list_id, subscription_list)
+
+            msg = self.mta.build_message('SUBSCRIBED', protocol=config.PROTOCOLS['PUB/SUB'],
+                                         topic=config.TOPICS['ANSWER'], message_id=message_id)
+        else:
+            msg = self.mta.build_message('error', protocol=config.PROTOCOLS['PUB/SUB'], topic=config.TOPICS['ANSWER'],
+                                         message_id=message_id)
+        msg.send(self.mta, email_client, self.server_info)
+
+        # self.add(subscription_list_id, subscriber)
+
+    def unsubscribe(self, subscriber: str, event: str, email_client: str, message_id: str):
+        """
+        This method represents an unsubscription.
+        :param message_id: str
+        :param email_client: str
+        :param subscriber: str
+        :param event: str
+        :return: None
+        """
+        subscription_list_id = hashlib.sha1(event.encode()).hexdigest()
+        subscription_list = Data.from_tuple(pickle.loads(self.exposed_get(subscription_list_id)))
+        # TODO: ver que retorna para q no se roma el if
+        if subscription_list:
+            user_id = hashlib.sha1(subscriber.encode()).hexdigest()
+            subscription_list['list'].remove(user_id)
+            subscription_list = pickle.dumps(subscription_list)
+
+            self.exposed_set(subscription_list_id, subscription_list)
+
+            msg = self.mta.build_message('UNSUBSCRIBED', protocol=config.PROTOCOLS['PUB/SUB'],
+                                         topic=config.TOPICS['ANSWER'], message_id=message_id)
+        else:
+            msg = self.mta.build_message('ERROR', protocol=config.PROTOCOLS['PUB/SUB'], topic=config.TOPICS['ANSWER'],
+                                         message_id=message_id)
+
+        msg.send(self.mta, email_client, self.server_info)
+
+    def publish(self, user: str, event: str, email_client: str, message_id: str):
+        subscription_list_id = hashlib.sha1(event.encode()).hexdigest()
+        user_id = hashlib.sha1(user.encode()).hexdigest()
+
+        subscriptions = Data.from_tuple(pickle.loads(self.exposed_get(subscription_list_id)))
+        if user_id == subscriptions['admin']:
+            content = ';'.join([
+                Data.from_tuple(pickle.loads(self.exposed_get(user_id)))['mail'] for user_id in subscriptions['list']
+            ])
+
+            msg = self.mta.build_message(body=content, protocol=config.PROTOCOLS['PUB/SUB'],
+                                         topic=config.TOPICS['ANSWER'], message_id=message_id)
+        else:
+            msg = self.mta.build_message('YOU DO NOT HAVE PERMISSION', protocol=config.PROTOCOLS['PUB/SUB'],
+                                         topic=config.TOPICS['ANSWER'], message_id=message_id)
+
+        msg.send(self.mta, email_client, self.server_info)
+
+    def create_event(self, user: str, event: str, email_client: str, message_id: str):
+        subscription_list_id = hashlib.sha1(event.encode()).hexdigest()
+        user_id = hashlib.sha1(user.encode()).hexdigest()
+        subscriptions = Data.from_tuple(pickle.loads(self.exposed_get(subscription_list_id)))
+        # TODO: ver que retorna no valla a ser que el if no funcione
+        if not subscriptions:
+            event = pickle.dumps({
+                'list': [],
+                'admin': user_id
+            })
+            self.exposed_set(subscription_list_id, event)
+            msg = self.mta.build_message('EVENT CREATED', protocol=config.PROTOCOLS['PUB/SUB'],
+                                         topic=config.TOPICS['ANSWER'], message_id=message_id)
+        else:
+            msg = self.mta.build_message('ERROR TO CREATE EVENT', protocol=config.PROTOCOLS['PUB/SUB'],
+                                         topic=config.TOPICS['ANSWER'], message_id=message_id)
+
+        msg.send(self.mta, email_client, self.server_info)
+
+    def send(self, user: str, email_client: str, message_id: str):
+        user_id = hashlib.sha1(user.encode()).hexdigest()
+        user_mail = Data.from_tuple(pickle.loads(self.exposed_get(user_id)))['mail']
+
+        msg = self.mta.build_message(user_mail, protocol=config.config.PROTOCOLS['DATA'], topic=config.TOPICS['ANSWER'],
+                                     message_id=message_id)
+        msg.send(self.mta, email_client, self.server_info)
+
+    def login(self, user: str, pwd: str, user_mail: str, message_id: str):
+        user_id = hashlib.sha1(user.encode()).hexdigest()
+        pwd = hashlib.sha1(pwd.encode()).hexdigest()
+
+        user = Data.from_tuple(pickle.loads(self.exposed_get(user_id)))
+        if user['pass'] == pwd:
+            msg = self.mta.build_message(user_id, protocol=config.config.PROTOCOLS['CONFIG'],
+                                         topic=config.TOPICS['LOGIN'], message_id=message_id)
+        else:
+            msg = self.mta.build_message('ERROR AUTHENTICATION', protocol=config.config.PROTOCOLS['CONFIG'],
+                                         topic=config.TOPICS['LOGIN'], message_id=message_id)
+
+        msg.send(self.mta, user_mail, self.server_info)
+
+    def register(self, user: str, pwd: str, user_mail: str, message_id: str):
+        user_id = hashlib.sha1(user.encode()).hexdigest()
+        user = Data.from_tuple(pickle.loads(self.exposed_get(user_id)))
+        # TODO: ver que rerorna esto, pq puede que no sira el if
+        if not user:
+            pwd = hashlib.sha1(pwd.encode()).hexdigest()
+            user = pickle.dumps(
+                {
+                    'mail': user_mail,
+                    'pwd': pwd,
+                    'user': user
+                }
+            )
+            self.exposed_set(user_id, user)
+            msg = self.mta.build_message(user_id, protocol=config.config.PROTOCOLS['CONFIG'],
+                                         topic=config.TOPICS['REGISTER'], message_id=message_id)
+        else:
+            msg = self.mta.build_message('ERROR', protocol=config.config.PROTOCOLS['CONFIG'],
+                                         topic=config.TOPICS['REGISTER'], message_id=message_id)
+
+        msg.send(self.mta, user_mail, self.server_info)
+
+    @thread
+    def multiplexer(self):
+        while True:
+            if len(self.mta.config_queue) > 0:
+                block = self.mta.config_queue.pop(0)
+                if block.subject['protocol'] == config.PROTOCOLS['CONFIG']:
+                    if block.subject['topic'] == config.TOPICS['REGISTER']:
+                        user_pass_email = block.text.split('\n')
+                        self.register(user_pass_email[0], user_pass_email[1], user_pass_email[2], block.id)
+                    elif block.subject['topic'] == config.TOPICS['LOGIN']:
+                        user_pass = block.text.split('\n')
+                        self.login(user_pass[0], user_pass[1], block.email, block['From'])
+                    elif block.subject['topic'] == config.TOPICS['CMD']:
+                        self.send(block.text, block['From'], block.id)
+                    elif block.subject['topic'] == config.TOPICS['PUBLICATION']:
+                        self.publish(block.subject['user'], block.text, block.email, block.id)
+                    elif block.subject['topic'] == config.TOPICS['SUBSCRIPTION']:
+                        self.subscribe(block.subject['user'], block.text, block.email, block.id)
+                    elif block.subject['topic'] == config.TOPICS['UNSUBSCRIPTION']:
+                        self.unsubscribe(block.subject['user'], block.text, block.email, block.id)
+                    else:
+                        # block.subject['topic'] == config.TOPICS['CREATE']
+                        self.create_event(block.subject['user'], block.text, block.email, block.id)
+
 
 def main(server_email_addr: str = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6)),
          join_addr: str = None,
+         server: str = 'correo.estudiantes.matcom.uh.cu',
+         pwd: str = '#1S1m0l5enet',
          ip_addr: str = None):
-    t = ThreadedServer(EBMS(server_email_addr, join_addr, ip_addr), port=ip_addr[1] if ip_addr else config.PORT)
+    t = ThreadedServer(
+        EBMS(server_email_addr, join_addr, server, pwd, ip_addr, user_email='s.martin@estudiantes.matcom.uh.cu'),
+        port=ip_addr[1] if ip_addr else config.PORT)
     t.start()
 
 

@@ -1,5 +1,6 @@
 import logging
 import json
+import ast
 
 from email.message import EmailMessage
 
@@ -93,13 +94,25 @@ class Block(EmailMessage):
 
     @staticmethod
     def block_from_imbox_msg(imbox_msg):
-        info = json.loads(imbox_msg.subject)
+        try:
+            logger.info(f'Subject from imbox msg {imbox_msg.subject}')
+            # subject = ast.literal_eval(imbox_msg.subject)
+            # info = json.loads(subject)
+            info = json.loads(imbox_msg.subject)
 
-        return Block(info['block_id'],
-                     info,
-                     imbox_msg.sent_from,
-                     imbox_msg.sent_to,
-                     imbox_msg.body.plain)
+            logger.info(f'Info from imbox subject is: {info}')
+            # logger.info(f'\nImbox is: {imbox_msg}')
+            logger.info(f'\nImbox body is: {imbox_msg.body}')
+            # logger.info(f"\nImbox body is: {imbox_msg.body['plain']}")
+            # logger.info(f"\nImbox body is: {imbox_msg.body['plain']}")
+            return Block(info['block_id'],
+                         info,
+                         imbox_msg.sent_from[0]['email'],
+                         imbox_msg.sent_to[0]['email'],
+                         imbox_msg.body['plain'][0])
+        except Exception as e:
+            logger.error(f'Invalid to parse. Thrown exception: {e}')
+            return None
 
 
 def test():
