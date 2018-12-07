@@ -60,7 +60,7 @@ def login():
 def register():
     if request.method == 'POST':
         ebmc.register(request.form['email'], request.form['pass'])
-
+        print('++++++++++++++++++++++++++entro al registro+++++++++++++++++++++++++')
         return redirect('/')
     return render_template('register.html')
 
