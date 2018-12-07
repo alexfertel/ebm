@@ -1,19 +1,18 @@
 #!/usr/bin/env python3.6
 import config
-import fcntl
+import copy
 import fire
 import hashlib
-import json
 import logging
 import pickle
 import random
 import rpyc
 import socket
 import string
-import struct
 
 from utils import inbetween
 from decorators import retry, retry_times
+from data import Data
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('SERVER')
@@ -37,9 +36,8 @@ class EBMS(rpyc.Service):
 
         self.failed_nodes = []  # list of successor nodes
 
-        # Init data file
-        with open('data.json', 'w+') as fd:
-            fd.write('{}')
+        # This server keys
+        self.data = {}
 
         logger.debug(f'Capture ip address of self on server: {self.exposed_identifier() % config.SIZE}')
         # Sets this server's ip address correctly :) Thanks stackoverflow!
@@ -51,40 +49,48 @@ class EBMS(rpyc.Service):
         else:
             self.addr = ip_addr
 
+        self.me = self.exposed_identifier(), self.addr
+
         logger.debug(f'Ip address of self on server: {self.exposed_identifier()} is: {self.addr}')
 
         logger.debug(f'Starting join of server: {self.exposed_identifier()}')
         self.exposed_join(join_addr)  # Join chord
         logger.debug(f'Ended join of server: {self.exposed_identifier()}')
 
-    @retry_times(config.RETRY_ON_FAILURE_TIMES)
+    # @retry_times(config.RETRY_ON_FAILURE_TIMES)
     def remote_request(self, addr, method, *args):
         if addr == self.addr:
             m = getattr(self, 'exposed_' + method)
             ans = m(*args)
         else:
-            c = rpyc.connect(*addr)
-            m = getattr(c.root, method)
-            ans = m(*args)
-            c.close()
+            if self.is_online(addr):
+                c = rpyc.connect(*addr)
+                m = getattr(c.root, method)
+                ans = m(*args)
+                c.close()
+            else:
+                logger.error(f'\nRemote request: {method} in to address: {addr} could not be done.\n'
+                             f'Server {addr} is down.')
+                return
         return ans
 
-    def is_online(self, key, addr):
+    def is_online(self, addr):
         if addr == self.addr:
             return True
         try:
             c = rpyc.connect(*addr)
             c.close()
             logger.info(f'Server with address: {addr} is online.')
-            if (key, addr) in self.failed_nodes:
+            if addr in self.failed_nodes:
                 logger.info(f'Server with address: {addr} was down. Execute remote join.')
-                self.failed_nodes.remove((key, addr))
-                self.remote_request(addr, 'join', (self.exposed_identifier(), self.addr))
+                self.failed_nodes.remove(addr)
+                self.remote_request(addr, 'join', self.me)
             return True
-        except:
+        except Exception as e:
             logger.error(f'Server with address: {addr} is down.')
-            if (key, addr) not in self.failed_nodes:
-                self.failed_nodes.append((key, addr))
+            logger.error(f'Exception: "{e}" was thrown.')
+            if addr not in self.failed_nodes:
+                self.failed_nodes.append(addr)
             return False
 
     def exposed_identifier(self):
@@ -99,19 +105,20 @@ class EBMS(rpyc.Service):
 
     # Return first online successor
     def exposed_successor(self):
-        logger.debug(f'Calling exposed_successor on server: {self.exposed_identifier() % config.SIZE}')
+        # logger.debug(f'Calling exposed_successor on server: {self.exposed_identifier() % config.SIZE}')
         candidates = [self.ft[1]] + list(self.successors)
 
         if len(candidates) == 0:  # Trying to fix fingers without having stabilized
-            return self.exposed_identifier(), self.addr
+            return self.me
 
         for index, n in enumerate(candidates):
             logger.debug(f'Successor {index} in server: {self.exposed_identifier()} is {n}')
-            if n and self.is_online(*n):
+            if n and self.is_online(n[1]):
+                logger.debug(f'Successor {index} was selected.')
                 return n
         else:
             logger.error(f'There is no online successor, thus we are our successor')
-            return self.exposed_identifier(), self.addr
+            return self.me
 
     def exposed_get_successors(self):
         return self.successors
@@ -125,31 +132,37 @@ class EBMS(rpyc.Service):
                      f'on server: {self.exposed_identifier() % config.SIZE}')
 
         if self.ft[0] != 'unknown' and inbetween(self.ft[0][0] + 1, self.exposed_identifier(), identifier):
-            return self.exposed_identifier(), self.addr
+            return self.me
 
         n_prime = self.exposed_find_predecessor(identifier)
         return self.remote_request(n_prime[1], 'successor')
 
     def exposed_find_predecessor(self, identifier):
-        logger.debug(
-            f'Calling exposed_find_predecessor({identifier % config.SIZE}) on server: {self.exposed_identifier() % config.SIZE}')
-        n_prime = (self.exposed_identifier(), self.addr)
+        # logger.debug(f'Calling exposed_find_predecessor({identifier % config.SIZE}) on server: {self.exposed_identifier() % config.SIZE}')
+        n_prime = self.me
         succ = self.exposed_successor()
 
-        if succ[0] == self.exposed_identifier():
-            return self.exposed_identifier(), self.addr
+        if succ[0] == self.me[0]:
+            return self.me
 
         while not inbetween(n_prime[0] + 1, succ[0] + 1, identifier):
             n_prime = self.remote_request(n_prime[1], 'closest_preceding_finger', identifier)
+            succ = self.remote_request(n_prime[1], 'successor')
+            # if not n_prime:
+            #     return self.exposed_successor()
         return n_prime
 
     # return closest preceding finger (id, ip)
     def exposed_closest_preceding_finger(self, exposed_identifier):
-        for i in reversed(range(1, len(self.ft))):
-            if inbetween(self.exposed_identifier() + 1, exposed_identifier - 1, self.ft[i][0]):
+        for i in range(len(self.ft) - 1, 0, -1):
+            if self.ft[i] != (-1, ('', -1)) and inbetween(self.exposed_identifier() + 1, exposed_identifier - 1,
+                                                          self.ft[i][0]):
                 # Found responsible for next iteration
                 return self.ft[i]
-        return self.exposed_identifier(), self.addr
+        succ = self.exposed_successor()
+        return succ \
+            if inbetween(self.exposed_identifier() + 1, exposed_identifier - 1, succ[0]) \
+            else self.me
 
     # # n joins the network;
     # # n' is an arbitrary in the network
@@ -161,7 +174,7 @@ class EBMS(rpyc.Service):
             self.ft[1] = finger
         else:  # n is the only in the network
             logger.debug(f'First of the network -> server: {self.exposed_identifier()}')
-            self.ft[1] = (self.exposed_identifier(), self.addr)
+            self.ft[1] = self.me
 
         logger.debug(f'Successful join of: {self.exposed_identifier()} to chord')
 
@@ -174,6 +187,9 @@ class EBMS(rpyc.Service):
         logger.debug(f'Start updating successors of: {self.exposed_identifier()}')
         self.update_successors()
 
+        logger.debug(f'Start replicating data of: {self.exposed_identifier()}')
+        self.update_successors()
+
     # periodically verify n's immediate succesor,
     # and tell the exposed_successor about n.
     @retry(config.STABILIZATION_DELAY)
@@ -182,10 +198,11 @@ class EBMS(rpyc.Service):
         succ = self.exposed_successor()
         x = self.remote_request(succ[1], 'predecessor')
 
-        if x and x != 'unknown' and inbetween(self.exposed_identifier() + 1, succ[0] - 1, x[0]) and self.is_online(*x):
+        if x and x != 'unknown' and inbetween(self.exposed_identifier() + 1, succ[0] - 1, x[0]) and self.is_online(
+                x[1]):
             self.ft[1] = x
 
-        self.remote_request(self.exposed_successor()[1], 'notify', (self.exposed_identifier(), self.addr))
+        self.remote_request(self.exposed_successor()[1], 'notify', self.me)
 
     # n' thinks it might be our exposed_predecessor.
     def exposed_notify(self, n_prime_key_addr: tuple):
@@ -200,9 +217,10 @@ class EBMS(rpyc.Service):
         logger.debug(f'Fixing fingers on server: {self.exposed_identifier() % config.SIZE}')
         if config.MAX_BITS + 1 > 2:
             i = random.randint(2, config.MAX_BITS)
-            finger = self.exposed_find_successor(self.exposed_identifier() + 2 ** (i - 1))
-            self.ft[i] = finger
-            logger.debug(f'Finger {i} on server: {self.exposed_identifier() % config.SIZE} is {self.ft[i]}')
+            finger = self.exposed_find_successor((self.exposed_identifier() + (2 ** (i - 1))) % config.SIZE)
+            if finger:
+                self.ft[i] = finger
+                logger.debug(f'Finger {i} on server: {self.exposed_identifier() % config.SIZE} fixed to {self.ft[i]}')
 
     @retry(config.UPDATE_SUCCESSORS_DELAY)
     def update_successors(self):
@@ -213,72 +231,59 @@ class EBMS(rpyc.Service):
             return
         successors = [succ]
         remote_successors = list(self.remote_request(succ[1], 'get_successors'))[:config.SUCC_COUNT - 1]
+        logging.info(f'Remote successors: {remote_successors}')
         if remote_successors:
             successors += remote_successors
         self.successors = tuple(successors)
-
-    # def am_i_online(self):
-    #     ifaces = ['eth0', 'wlan0']
-    #     connected = []
-    # 
-    #     i = 0
-    #     for ifname in ifaces:
-    #         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    #         try:
-    #             socket.inet_ntoa(fcntl.ioctl(
-    #                 s.fileno(),
-    #                 0x8915,  # SIOCGIFADDR
-    #                 struct.pack('256s', ifname[:15])
-    #             )[20:24])
-    #             connected.append(ifname)
-    #             # print "%s is connected" % ifname
-    #         except:
-    #             # print "%s is not connected" % ifname
-    #             pass
-    #         i += 1
-    # 
-    #     return connected
+        logging.info(f'Successors: {successors}')
 
     # ##################################################### DATA ######################################################
+    # Get this nodes data
+    def exposed_get_data(self):
+        return pickle.dumps(self.data)
+
+    # Returned data will be a 'pickled' object
     def exposed_get(self, key):
+        data = self.data.get(key, None)
+        if data:
+            return data.to_tuple() if isinstance(data, Data) else data
+
         succ = self.exposed_find_successor(key)
-
-        if succ[1] == self.addr:  # I'm responsible for this key
-            obj = self.exposed_load_json()[key]
-            return self.exposed_dumps(pickle, obj)
-
         return self.remote_request(succ[1], 'get', key)
 
+    # value param must be a 'pickled' object
     def exposed_set(self, key, value):
-        node = self.exposed_find_successor(key)
-        dictionary = node.load()
-        dictionary[key] = value
-        node.save(dictionary)
+        if inbetween(self.exposed_predecessor()[0] + 1, self.exposed_identifier(), key):
+            logger.debug(f'Node {self.me} holds key {key}')
+            self.data[key] = pickle.loads(value)
+        else:
+            succ = self.exposed_find_successor(key)
+            self.remote_request(succ[1], 'set', key, value)
 
-    def exposed_save_json(self, dictionary: dict):
-        with open('data.json', 'w+') as fd:
-            self.exposed_dump(json, dictionary, fd)
+    def exposed_get_all(self):
+        start_node = self.exposed_identifier()
+        current_node = self.exposed_successor()
 
-    def exposed_load_json(self):
-        with open('data.json', 'r+') as fd:
-            return self.exposed_load(json, fd)
+        data = self.data  # start with start_node -self- keys
 
-    def exposed_dump(self, serializer, obj, fd):
-        serializer.dump(obj, fd)
+        while current_node[0] != start_node:
+            current_data = pickle.loads(self.remote_request(current_node[1], 'get_data'))
 
-    def exposed_dumps(self, serializer, obj):
-        return serializer.dumps(obj)
+            # Ours should have correct state of the keys, successors may not have correct replicas
+            current_data.update(data)
 
-    def exposed_load(self, serializer, fd):
-        return serializer.load(fd)
+            data = current_data
+            current_node = self.remote_request(current_node[1], 'successor')
 
-    def exposed_loads(self, serializer, obj):
-        return serializer.loads(obj)
+        return pickle.dumps(data)
 
     # ################################################## REPLICATION ###################################################
-    # This should move keys to a new and delete them
-    def move(self):
-        pass
+    # This should periodically move keys to a new node
+    @retry(config.REPLICATION_DELAY)
+    def replicate(self):
+        i = random.randint(0, len(self.successors))
+        for k, v in self.data.items():
+            self.remote_request(self.successors[i][1], 'set', k, pickle.dumps(v))
 
 
 def main(server_email_addr: str = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6)),
