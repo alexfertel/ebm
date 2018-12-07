@@ -138,6 +138,8 @@ class EBMS(rpyc.Service):
 
         while not inbetween(n_prime[0] + 1, succ[0] + 1, identifier):
             n_prime = self.remote_request(n_prime[1], 'closest_preceding_finger', identifier)
+            if not n_prime:
+                return self.exposed_successor()
         return n_prime
 
     # return closest preceding finger (id, ip)
@@ -200,9 +202,10 @@ class EBMS(rpyc.Service):
         logger.debug(f'Fixing fingers on server: {self.exposed_identifier() % config.SIZE}')
         if config.MAX_BITS + 1 > 2:
             i = random.randint(2, config.MAX_BITS)
-            finger = self.exposed_find_successor(self.exposed_identifier() + 2 ** (i - 1))
-            self.ft[i] = finger
-            logger.debug(f'Finger {i} on server: {self.exposed_identifier() % config.SIZE} is {self.ft[i]}')
+            finger = self.exposed_find_successor((self.exposed_identifier() + (2 ** (i - 1))) % config.SIZE)
+            if finger:
+                self.ft[i] = finger
+                logger.debug(f'Finger {i} on server: {self.exposed_identifier() % config.SIZE} fixed to {self.ft[i]}')
 
     @retry(config.UPDATE_SUCCESSORS_DELAY)
     def update_successors(self):
@@ -227,17 +230,20 @@ class EBMS(rpyc.Service):
             data = self.data.get(key, None)
             if data:
                 return data.to_tuple()
+            return None
 
         return self.remote_request(succ[1], 'get', key)
 
     # value param must be a 'pickled' object
     def exposed_set(self, key, value):
         succ = self.exposed_find_successor(key)
-
+        logger.debug(f'Getting the successor inside exposed_set. succ is {succ}')
         if succ[1] == self.addr:  # I'm responsible for this key
             data = self.data.get(key, None)
+            logger.debug(f'Data inside exposed_set. data is {data}')
             if data:
                 data[key] = pickle.loads(value)
+                logger.debug(f'Data inside exposed_set if. data is {data}')
         else:
             self.remote_request(succ[1], 'set', key, value)
 

@@ -4,7 +4,10 @@ import logging
 
 from threading import Thread
 
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('DECORATOR')
+
+thread_count = 0
 
 
 def loop(f, sleep_time, args, kwargs):
@@ -17,6 +20,7 @@ def retry(sleep_time=1):
     def decorator(f):
         def wrapper(*args, **kwargs):
             th = Thread(target=loop, args=(f, sleep_time, args, kwargs))
+            logger.info(f'Thread Count: {thread_count}')
             th.start()
 
         return wrapper
@@ -37,7 +41,7 @@ def retry_times(times):
                     count += 1
 
             logger.error(f'Exceeded retry_times when calling: {f.__name__}({args}, {kwargs}).')
-
+            return None
         return wrapper
 
     return decorator
