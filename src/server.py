@@ -69,6 +69,8 @@ class EBMS(rpyc.Service):
         self.exposed_join(join_addr)  # Join chord
         logger.debug(f'Ended join of server: {self.exposed_identifier()}')
 
+        self.multiplexer()
+
     # @retry_times(config.RETRY_ON_FAILURE_TIMES)
     def remote_request(self, addr, method, *args):
         if addr == self.addr:
@@ -167,7 +169,8 @@ class EBMS(rpyc.Service):
     # return closest preceding finger (id, ip)
     def exposed_closest_preceding_finger(self, exposed_identifier):
         for i in range(len(self.ft) - 1, 0, -1):
-            if self.ft[i] != (-1, ('', -1)) and inbetween(self.exposed_identifier() + 1, exposed_identifier - 1, self.ft[i][0]):
+            if self.ft[i] != (-1, ('', -1)) and inbetween(self.exposed_identifier() + 1, exposed_identifier - 1,
+                                                          self.ft[i][0]):
                 # Found responsible for next iteration
                 return self.ft[i]
         succ = self.exposed_successor()
@@ -209,7 +212,8 @@ class EBMS(rpyc.Service):
         succ = self.exposed_successor()
         x = self.remote_request(succ[1], 'predecessor')
 
-        if x and x != 'unknown' and inbetween(self.exposed_identifier() + 1, succ[0] - 1, x[0]) and self.is_online(x[1]):
+        if x and x != 'unknown' and inbetween(self.exposed_identifier() + 1, succ[0] - 1, x[0]) and self.is_online(
+                x[1]):
             self.ft[1] = x
 
         self.remote_request(self.exposed_successor()[1], 'notify', self.me)
@@ -309,11 +313,11 @@ class EBMS(rpyc.Service):
             """
         # TODO: ver como retorna los objetos el self.get
         subscription_list_id = hashlib.sha1(event.encode()).hexdigest()
-        subscription_list = self.exposed_get(subscription_list_id)
+        subscription_list = Data.from_tuple(pickle.loads(self.exposed_get(subscription_list_id)))
         if subscription_list:
             user_id = hashlib.sha1(subscriber.encode()).hexdigest()
             subscription_list['list'].push(user_id)
-
+            subscription_list = pickle.dumps(subscription_list)
             self.exposed_set(subscription_list_id, subscription_list)
 
             msg = self.mta.build_message('SUBSCRIBED', protocol=config.PROTOCOLS['PUB/SUB'],
@@ -335,10 +339,12 @@ class EBMS(rpyc.Service):
         :return: None
         """
         subscription_list_id = hashlib.sha1(event.encode()).hexdigest()
-        subscription_list = self.exposed_get(subscription_list_id)
+        subscription_list = Data.from_tuple(pickle.loads(self.exposed_get(subscription_list_id)))
+        # TODO: ver que retorna para q no se roma el if
         if subscription_list:
             user_id = hashlib.sha1(subscriber.encode()).hexdigest()
             subscription_list['list'].remove(user_id)
+            subscription_list = pickle.dumps(subscription_list)
 
             self.exposed_set(subscription_list_id, subscription_list)
 
@@ -354,9 +360,11 @@ class EBMS(rpyc.Service):
         subscription_list_id = hashlib.sha1(event.encode()).hexdigest()
         user_id = hashlib.sha1(user.encode()).hexdigest()
 
-        subscriptions = self.exposed_get(subscription_list_id)
+        subscriptions = Data.from_tuple(pickle.loads(self.exposed_get(subscription_list_id)))
         if user_id == subscriptions['admin']:
-            content = ';'.join([self.exposed_get(user_id)['mail'] for user_id in subscriptions['list']])
+            content = ';'.join([
+                Data.from_tuple(pickle.loads(self.exposed_get(user_id)))['mail'] for user_id in subscriptions['list']
+            ])
 
             msg = self.mta.build_message(body=content, protocol=config.PROTOCOLS['PUB/SUB'],
                                          topic=config.TOPICS['ANSWER'], message_id=message_id)
@@ -369,13 +377,13 @@ class EBMS(rpyc.Service):
     def create_event(self, user: str, event: str, email_client: str, message_id: str):
         subscription_list_id = hashlib.sha1(event.encode()).hexdigest()
         user_id = hashlib.sha1(user.encode()).hexdigest()
-        subscriptions = self.exposed_get(subscription_list_id)
-
+        subscriptions = Data.from_tuple(pickle.loads(self.exposed_get(subscription_list_id)))
+        # TODO: ver que retorna no valla a ser que el if no funcione
         if not subscriptions:
-            event = {
+            event = pickle.dumps({
                 'list': [],
                 'admin': user_id
-            }
+            })
             self.exposed_set(subscription_list_id, event)
             msg = self.mta.build_message('EVENT CREATED', protocol=config.PROTOCOLS['PUB/SUB'],
                                          topic=config.TOPICS['ANSWER'], message_id=message_id)
@@ -386,7 +394,8 @@ class EBMS(rpyc.Service):
         msg.send(self.mta, email_client, self.server_info)
 
     def send(self, user: str, email_client: str, message_id: str):
-        user_mail = self.exposed_get(hashlib.sha1(user.encode()).hexdigest())['mail']
+        user_id = hashlib.sha1(user.encode()).hexdigest()
+        user_mail = Data.from_tuple(pickle.loads(self.exposed_get(user_id)))['mail']
 
         msg = self.mta.build_message(user_mail, protocol=config.config.PROTOCOLS['DATA'], topic=config.TOPICS['ANSWER'],
                                      message_id=message_id)
@@ -396,7 +405,7 @@ class EBMS(rpyc.Service):
         user_id = hashlib.sha1(user.encode()).hexdigest()
         pwd = hashlib.sha1(pwd.encode()).hexdigest()
 
-        user = self.exposed_get(user_id)
+        user = Data.from_tuple(pickle.loads(self.exposed_get(user_id)))
         if user['pass'] == pwd:
             msg = self.mta.build_message(user_id, protocol=config.config.PROTOCOLS['CONFIG'],
                                          topic=config.TOPICS['LOGIN'], message_id=message_id)
@@ -408,14 +417,17 @@ class EBMS(rpyc.Service):
 
     def register(self, user: str, pwd: str, user_mail: str, message_id: str):
         user_id = hashlib.sha1(user.encode()).hexdigest()
-        user = self.exposed_get(user_id)
+        user = Data.from_tuple(pickle.loads(self.exposed_get(user_id)))
+        # TODO: ver que rerorna esto, pq puede que no sira el if
         if not user:
             pwd = hashlib.sha1(pwd.encode()).hexdigest()
-            user = {
-                'mail': user_mail,
-                'pwd': pwd,
-                'user': user
-            }
+            user = pickle.dumps(
+                {
+                    'mail': user_mail,
+                    'pwd': pwd,
+                    'user': user
+                }
+            )
             self.exposed_set(user_id, user)
             msg = self.mta.build_message(user_id, protocol=config.config.PROTOCOLS['CONFIG'],
                                          topic=config.TOPICS['REGISTER'], message_id=message_id)
@@ -448,7 +460,6 @@ class EBMS(rpyc.Service):
                     else:
                         # block.subject['topic'] == config.TOPICS['CREATE']
                         self.create_event(block.subject['user'], block.text, block.email, block.id)
-
 
 
 def main(server_email_addr: str = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6)),
