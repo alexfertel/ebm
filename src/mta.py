@@ -195,8 +195,9 @@ class Broker:
                    ssl=True,
                    ssl_context=ssl_context,
                    starttls=False) as imbox:
-            for _, message in imbox.messages(unread=True):
+            for uid, message in imbox.messages(unread=True):
                 unread.append(message)  # For now just append to the queue
+                imbox.delete(uid)
 
         return unread
 
