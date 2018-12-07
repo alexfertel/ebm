@@ -1,5 +1,6 @@
 #!/usr/bin/env python3.6
 import config
+import copy
 import fire
 import hashlib
 import logging
@@ -252,6 +253,9 @@ class EBMS(rpyc.Service):
         logging.info(f'Successors: {successors}')
 
     # ##################################################### DATA ######################################################
+    # Get this nodes data
+    def exposed_get_data(self):
+        return pickle.dumps(self.data)
 
     # Returned data will be a 'pickled' object
     def exposed_get(self, key):
@@ -260,7 +264,6 @@ class EBMS(rpyc.Service):
             return data.to_tuple() if isinstance(data, Data) else data
 
         succ = self.exposed_find_successor(key)
-
         return self.remote_request(succ[1], 'get', key)
 
     # value param must be a 'pickled' object
@@ -272,26 +275,22 @@ class EBMS(rpyc.Service):
             succ = self.exposed_find_successor(key)
             self.remote_request(succ[1], 'set', key, value)
 
-        # data = self.data.get(key, None)
-        # logger.debug(f'Data inside exposed_set. data is {data}')
-        # if data:
-        #     data[key] = pickle.loads(value)
-        #     logger.debug(f'Data inside exposed_set if. data is {data}')
-        #     return
-        # succ = self.exposed_find_successor(key)
-        # self.remote_request(succ[1], 'set', key, value)
+    def exposed_get_all(self):
+        start_node = self.exposed_identifier()
+        current_node = self.exposed_successor()
 
-    # def exposed_save_data(self, data):
-    #     try:
-    #         with open('data.pickle', 'xb') as fd:
-    #             pickle.dump(data, fd)
-    #     except:
-    #         with open('data.pickle', 'w+b') as fd:
-    #             pickle.dump(data, fd)
+        data = self.data  # start with start_node -self- keys
 
-    # def exposed_load_data(self):
-    #     with open('data.pickle', 'rb') as fd:
-    #         return pickle.load(fd)
+        while current_node[0] != start_node:
+            current_data = pickle.loads(self.remote_request(current_node[1], 'get_data'))
+
+            # Ours should have correct state of the keys, successors may not have correct replicas
+            current_data.update(data)
+
+            data = current_data
+            current_node = self.remote_request(current_node[1], 'successor')
+
+        return pickle.dumps(data)
 
     # ################################################## REPLICATION ###################################################
     # This should periodically move keys to a new node
