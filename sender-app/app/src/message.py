@@ -4,9 +4,9 @@ import time
 import copy
 import email
 
-from block import Block
-from user import User
-from utils import cut
+from src.block import Block
+from src.user import User
+from src.utils import cut
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('MESSAGE')

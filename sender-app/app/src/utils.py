@@ -1,5 +1,5 @@
 #!/usr/bin/env python3.6
-import config
+import src.config
 
 
 def cut(body: str, size: int = config.MESSAGE_LENGTH) -> list:
