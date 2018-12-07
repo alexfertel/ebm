@@ -59,8 +59,9 @@ def login():
 @view.route('/sing-up', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        ebmc.register(request.form['email'], request.form['pass'])
         print('++++++++++++++++++++++++++entro al registro+++++++++++++++++++++++++')
+        ebmc.register(request.form['email'], request.form['pwd'])
+        print('++++++++++++++++++++++++++llamo al metodo+++++++++++++++++++++++++')
         return redirect('/')
     return render_template('register.html')
 
