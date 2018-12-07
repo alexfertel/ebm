@@ -8,6 +8,12 @@ from .config import PROTOCOLS, TOPICS
 from .utils import *
 from .user import User
 
+import logging
+
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger('CLIENT')
+
 
 # self, server_email_addr: str,
 #                  join_addr: str,
@@ -47,7 +53,7 @@ class EBMC:
             protocol=PROTOCOLS['CONFIG'],
             topic=TOPICS['REGISTER']
         )
-
+        logger.info(f'User: {user} Pass: {password} Server {self.server_addr}')
         msg.send(self.mta, self.server_addr)
 
         item = None
@@ -123,6 +129,7 @@ class EBMC:
     def subscribe(self, event: str):
         msg = self.mta.build_message(body=event, protocol=PROTOCOLS['CONFIG'], topic=TOPICS['SUBSCRIPTION'], token=self.token)
         msg.send(self.mta, self.server_addr)
+
 
     @thread
     def unsubscribe(self, event: str):
