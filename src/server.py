@@ -56,34 +56,40 @@ class EBMS(rpyc.Service):
         self.exposed_join(join_addr)  # Join chord
         logger.debug(f'Ended join of server: {self.exposed_identifier()}')
 
-    @retry_times(config.RETRY_ON_FAILURE_TIMES)
+    # @retry_times(config.RETRY_ON_FAILURE_TIMES)
     def remote_request(self, addr, method, *args):
         if addr == self.addr:
             m = getattr(self, 'exposed_' + method)
             ans = m(*args)
         else:
-            c = rpyc.connect(*addr)
-            m = getattr(c.root, method)
-            ans = m(*args)
-            c.close()
+            if self.is_online(addr):
+                c = rpyc.connect(*addr)
+                m = getattr(c.root, method)
+                ans = m(*args)
+                c.close()
+            else:
+                logger.error(f'\nRemote request: {method} in to address: {addr} could not be done.\n'
+                             f'Server {addr} is down.')
+                return
         return ans
 
-    def is_online(self, key, addr):
+    def is_online(self, addr):
         if addr == self.addr:
             return True
         try:
             c = rpyc.connect(*addr)
             c.close()
             logger.info(f'Server with address: {addr} is online.')
-            if (key, addr) in self.failed_nodes:
+            if addr in self.failed_nodes:
                 logger.info(f'Server with address: {addr} was down. Execute remote join.')
-                self.failed_nodes.remove((key, addr))
+                self.failed_nodes.remove(addr)
                 self.remote_request(addr, 'join', self.me)
             return True
-        except:
+        except Exception as e:
             logger.error(f'Server with address: {addr} is down.')
-            if (key, addr) not in self.failed_nodes:
-                self.failed_nodes.append((key, addr))
+            logger.error(f'Exception: "{e}" was thrown.')
+            if addr not in self.failed_nodes:
+                self.failed_nodes.append(addr)
             return False
 
     def exposed_identifier(self):
@@ -98,7 +104,7 @@ class EBMS(rpyc.Service):
 
     # Return first online successor
     def exposed_successor(self):
-        logger.debug(f'Calling exposed_successor on server: {self.exposed_identifier() % config.SIZE}')
+        # logger.debug(f'Calling exposed_successor on server: {self.exposed_identifier() % config.SIZE}')
         candidates = [self.ft[1]] + list(self.successors)
 
         if len(candidates) == 0:  # Trying to fix fingers without having stabilized
@@ -106,7 +112,8 @@ class EBMS(rpyc.Service):
 
         for index, n in enumerate(candidates):
             logger.debug(f'Successor {index} in server: {self.exposed_identifier()} is {n}')
-            if n and self.is_online(*n):
+            if n and self.is_online(n[1]):
+                logger.debug(f'Successor {index} was selected.')
                 return n
         else:
             logger.error(f'There is no online successor, thus we are our successor')
@@ -130,23 +137,23 @@ class EBMS(rpyc.Service):
         return self.remote_request(n_prime[1], 'successor')
 
     def exposed_find_predecessor(self, identifier):
-        logger.debug(
-            f'Calling exposed_find_predecessor({identifier % config.SIZE}) on server: {self.exposed_identifier() % config.SIZE}')
+        # logger.debug(f'Calling exposed_find_predecessor({identifier % config.SIZE}) on server: {self.exposed_identifier() % config.SIZE}')
         n_prime = self.me
         succ = self.exposed_successor()
 
-        if succ[0] == self.exposed_identifier():
+        if succ[0] == self.me[0]:
             return self.me
 
         while not inbetween(n_prime[0] + 1, succ[0] + 1, identifier):
             n_prime = self.remote_request(n_prime[1], 'closest_preceding_finger', identifier)
-            if not n_prime:
-                return self.exposed_successor()
+            succ = self.remote_request(n_prime[1], 'successor')
+            # if not n_prime:
+            #     return self.exposed_successor()
         return n_prime
 
     # return closest preceding finger (id, ip)
     def exposed_closest_preceding_finger(self, exposed_identifier):
-        for i in reversed(range(1, len(self.ft))):
+        for i in range(len(self.ft) - 1, 0, -1):
             if self.ft[i] != (-1, ('', -1)) and inbetween(self.exposed_identifier() + 1, exposed_identifier - 1, self.ft[i][0]):
                 # Found responsible for next iteration
                 return self.ft[i]
@@ -189,10 +196,10 @@ class EBMS(rpyc.Service):
         succ = self.exposed_successor()
         x = self.remote_request(succ[1], 'predecessor')
 
-        if x and x != 'unknown' and inbetween(self.exposed_identifier() + 1, succ[0] - 1, x[0]) and self.is_online(*x):
+        if x and x != 'unknown' and inbetween(self.exposed_identifier() + 1, succ[0] - 1, x[0]) and self.is_online(x[1]):
             self.ft[1] = x
 
-        self.remote_request(self.exposed_successor()[1], 'notify', (self.me))
+        self.remote_request(self.exposed_successor()[1], 'notify', self.me)
 
     # n' thinks it might be our exposed_predecessor.
     def exposed_notify(self, n_prime_key_addr: tuple):

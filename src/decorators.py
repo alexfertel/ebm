@@ -21,6 +21,7 @@ def retry(sleep_time=1):
         def wrapper(*args, **kwargs):
             th = Thread(target=loop, args=(f, sleep_time, args, kwargs))
             logger.info(f'Thread Count: {thread_count}')
+            th.daemon = True
             th.start()
 
         return wrapper
