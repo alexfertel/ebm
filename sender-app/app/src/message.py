@@ -150,8 +150,8 @@ class Message:
         """
 
         # If the length of the blocks prop is 0, the message has not been unwrapped
-        if not len(self):
-            self.unwrap(self.body)
+        # if not len(self):
+        #     self.unwrap(self.body)
 
         # Enqueue each of the blocks of self as EmailMessage instances
         for block in self.blocks:
