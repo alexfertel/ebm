@@ -1,9 +1,14 @@
 from flask import render_template, Blueprint, request, redirect
 from werkzeug.utils import secure_filename
-from config import UPLOAD_FOLDER, TOKEN
+from config import UPLOAD_FOLDER, TOKEN, RECIVED_FOLDER
 from . import utils
 import os
 import time
+from datetime import date
+from .src.client import EBMC
+
+
+ebmc = EBMC('s.martin@estudiantes.matcom.uh.cu', 'a.fertel@estudiantes.matcom.uh.cu', 'correo.estudiantes.matcom.uh.cu', '#1S1m0l5enet')
 
 # from src.client import EBMC
 
@@ -58,8 +63,6 @@ def login():
 
 @view.route('/sing-up', methods=['GET', 'POST'])
 def register():
-    print('++++++++++++++++++++++++++registro+++++++++++++++++++++++++')
-    print(request.method)
 
     if request.method == 'POST':
         print('++++++++++++++++++++++++++entro al registro+++++++++++++++++++++++++')
@@ -96,3 +99,39 @@ def settings():
         # ebmc = EBMC()
         return redirect('/')
     return render_template('settings.html')
+
+
+
+
+
+def get_files():
+    files = os.listdir(RECIVED_FOLDER)
+    file_info = [
+        (file,
+         date.fromtimestamp(os.path.getmtime(os.path.join(RECIVED_FOLDER, file))),
+         os.path.getsize(os.path.join(RECIVED_FOLDER, file)) / 1000000.0
+         ) for file in files
+    ]
+    return file_info
+
+
+def send_file(file_location, target, type):
+    file = open(file_location)
+    size = os.path.getsize(file_location)
+
+    # TODO: cambia 1000 por el tamanno maximo permitido
+    for target in range(int(size / 1000)):
+
+        # TODO: mandar correro con esta info
+        # (self, user: str, data: str, name: str)
+        ebmc.send('sandor', file.read(1000), file.name)
+
+    if size % 1000:
+        ebmc.send('sandor', file.read(size % 1000), file.name)
+
+        # mandar correro con esta info
+    file.close()
+    os.remove(file_location)
+    # TODO: buscar como borrar los archivos, ya que no es necsarios q
+    # persistan en el cliente una vez q se mandaron
+
