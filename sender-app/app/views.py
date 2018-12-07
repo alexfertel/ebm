@@ -9,9 +9,6 @@ import os
 view: Blueprint = Blueprint('views', __name__)
 
 
-# ebmc = EBMC()
-
-
 @view.route('/', methods=['GET', 'POST'])
 def index(error=''):
     file_info = utils.get_files()

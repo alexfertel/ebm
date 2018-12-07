@@ -1,10 +1,8 @@
 # Client library to export and use by clients
 import copy
 import time
-import threading
 
-from mta import Broker
-from message import Message
+from .mta import Broker
 from decorators import thread
 from config import PROTOCOLS, TOPICS
 from .utils import *
@@ -22,6 +20,7 @@ from .user import User
 class EBMC:
     def __init__(self, user, client_email_addr, server_addr, pwd):
         """
+        :rtype:
         :param user: user to login in server
         :param client_email_addr: email
         :param server_addr: server
@@ -32,7 +31,7 @@ class EBMC:
 
         self.server_info = User(user, client_email_addr, user, pwd)
 
-        self.mta: Broker = Broker(server_addr, self.server_info)
+        self.mta = Broker(server_addr, self.server_info)
 
         self.user = ''
         self.token = ''
@@ -42,7 +41,13 @@ class EBMC:
     # returns an ID
     @thread
     def register(self, user, password):
-        msg = self.mta.build_message(body=f'{user}\n{password}\n{self.server_info.active_email}', protocol=PROTOCOLS['CONFIG'], topic=TOPICS['REGISTER'])
+        content = user+'\n'+password+'\n'+self.server_info.active_email
+        msg = self.mta.build_message(
+            body= content,
+            protocol=PROTOCOLS['CONFIG'],
+            topic=TOPICS['REGISTER']
+        )
+
         msg.send(self.mta, self.server_addr)
 
         item = None
@@ -55,7 +60,7 @@ class EBMC:
 
     @thread
     def login(self, user, password):
-        msg = self.mta.build_message(body=f'{user}\n{password}', protocol=PROTOCOLS['CONFIG'], topic=TOPICS['LOGIN'])
+        msg = self.mta.build_message(body=user+'\n'+password, protocol=PROTOCOLS['CONFIG'], topic=TOPICS['LOGIN'])
         msg.send(self.mta, self.server_addr)
 
         item = None
@@ -73,7 +78,7 @@ class EBMC:
         :param data:
         :param name: name of package
         """
-        msg = self.mta.build_message(body=f'{user}', protocol=PROTOCOLS['CONFIG'], topic=TOPICS['CMD'])
+        msg = self.mta.build_message(body=user, protocol=PROTOCOLS['CONFIG'], topic=TOPICS['CMD'])
         msg.send(self.mta, self.server_addr)
         item = None
         while not item:
@@ -81,7 +86,7 @@ class EBMC:
             if item is not None:
                 email = item.text
                 self.mta.config_queue.remove(item)
-                msg_data = self.mta.build_message(body=f'{data}', protocol=PROTOCOLS['DATA'], topic=TOPICS['ANSWER'],
+                msg_data = self.mta.build_message(body=data, protocol=PROTOCOLS['DATA'], topic=TOPICS['ANSWER'],
                                                   name=name, user=self.user, token=self.token)
                 msg_data.send(self.mta, email)
                 break
@@ -102,7 +107,7 @@ class EBMC:
             if item is not None:
                 emails = item.text.split(';')
                 self.mta.config_queue.remove(item)
-                msg_data = self.mta.build_message(body=f'{data}', protocol=PROTOCOLS['DATA'], topic=TOPICS['PUBLICATION'],
+                msg_data = self.mta.build_message(body=data, protocol=PROTOCOLS['DATA'], topic=TOPICS['PUBLICATION'],
                                                   name=name, user=self.user, token=self.token)
                 for email in emails:
                     msg_data.send(self.mta, email)
