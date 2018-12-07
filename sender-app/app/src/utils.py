@@ -1,8 +1,8 @@
 #!/usr/bin/env python3.6
-import .config
+from .config import *
 
 
-def cut(body: str, size: int = config.MESSAGE_LENGTH) -> list:
+def cut(body: str, size: int = MESSAGE_LENGTH) -> list:
     length = len(body)
     if size > length:
         val = ''
@@ -26,9 +26,9 @@ def inbetween(a, b, c):
     :param c: int
     :return: bool
     """
-    a = a % config.SIZE
-    b = b % config.SIZE
-    c = c % config.SIZE
+    a = a % SIZE
+    b = b % SIZE
+    c = c % SIZE
     if a < b:
         return a <= c <= b
     return a <= c or c <= b
