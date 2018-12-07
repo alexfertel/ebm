@@ -60,6 +60,7 @@ class Broker:
         # TODO: clasificar los msj
 
         for block in blocks:
+            logger.info(f'{block}')
             if block.subject.get('protocol', None) and block.subject['protocol'] == config.PROTOCOLS['CONFIG']:
                 self._config_queue.append(block)
             else:
