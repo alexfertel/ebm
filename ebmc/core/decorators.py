@@ -1,7 +1,7 @@
-import config
 import time
 import logging
 
+from core import config
 from threading import Thread
 
 logging.basicConfig(level=logging.DEBUG)

@@ -19,8 +19,10 @@ def loop(f, sleep_time, args, kwargs):
 def retry(sleep_time=1):
     def decorator(f):
         def wrapper(*args, **kwargs):
+            global thread_count
             th = Thread(target=loop, args=(f, sleep_time, args, kwargs))
             logger.info(f'Thread Count: {thread_count}')
+            thread_count += 1
             th.daemon = True
             th.start()
 
@@ -50,7 +52,9 @@ def retry_times(times):
 
 def thread(f):
     def thread_decorator(*args, **kwargs):
+        global thread_count
         th = Thread(target=f, args=args, kwargs=kwargs)
+        thread_count += 1
         th.daemon = True
         th.start()
 

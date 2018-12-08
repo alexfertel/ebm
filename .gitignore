@@ -41,10 +41,8 @@ Thumbs.db
 build_dependencies
 */**/__pycache__
 /sender-app/uploads
-/sender-app/static/recived
+/sender-app/static/received
 rpyc*
 plumbum*
 ebm.tar.xz
 src/data.json
-ebmc/**/*
-setup.py

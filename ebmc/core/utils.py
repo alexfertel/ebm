@@ -1,14 +1,20 @@
 #!/usr/bin/env python3.6
 import hashlib
+from core import config
 
-from config import *
 
-
-def cut(l: str, n: int = MESSAGE_LENGTH):
+def cut(l: str, n: int = config.MESSAGE_LENGTH):
     result = []
     for i in range(0, len(l), n):
         result.append(l[i:i + n])
     return result
+
+
+def in_queue(id: str, queue: list):
+    for item_id, item in queue:
+        if id == item_id:
+            return item
+    return None
 
 
 def inbetween(a, b, c):
@@ -19,19 +25,12 @@ def inbetween(a, b, c):
     :param c: int
     :return: bool
     """
-    a = a % SIZE
-    b = b % SIZE
-    c = c % SIZE
+    a = a % config.SIZE
+    b = b % config.SIZE
+    c = c % config.SIZE
     if a < b:
         return a <= c <= b
     return a <= c or c <= b
-
-
-def in_queue(id: str, queue: list):
-    for item_id, item in queue:
-        if id == item_id:
-            return item
-    return None
 
 
 def hashing(obj):
