@@ -418,7 +418,7 @@ class EBMS(rpyc.Service):
 
         exists = self.exposed_get(user_id)
         chord_user = Data().from_tuple(pickle.loads(exists)) if exists else None
-        if chord_user['pass'] == pwd:
+        if chord_user['pwd'] == pwd:
             msg = self.mta.build_message(str(user_id), protocol=config.PROTOCOLS['CONFIG'],
                                          topic=config.TOPICS['LOGIN'], message_id=message_id)
         else:
