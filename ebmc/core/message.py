@@ -2,9 +2,9 @@ import logging
 import time
 import copy
 
-from core.block import Block
-from core.user import User
-from core.utils import cut
+from ebmc.core.block import Block
+from ebmc.core.user import User
+from ebmc.core.utils import cut
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('MESSAGE')

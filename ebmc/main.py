@@ -2,11 +2,11 @@
 import copy
 import time
 
-from core.mta import Broker
-from core.decorators import thread
-from core.config import PROTOCOLS, TOPICS
-from core.utils import *
-from core.user import User
+from ebmc.core.mta import Broker
+from ebmc.core.decorators import thread
+from ebmc.core.config import PROTOCOLS, TOPICS
+from ebmc.core.utils import *
+from ebmc.core.user import User
 
 import logging
 

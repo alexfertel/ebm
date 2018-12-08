@@ -1,5 +1,5 @@
 import hashlib
-from core import config
+from ebmc.core import config
 
 
 class User:

@@ -46,3 +46,5 @@ rpyc*
 plumbum*
 ebm.tar.xz
 src/data.json
+build
+ebmc.egg-info

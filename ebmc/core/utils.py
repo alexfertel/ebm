@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.6
 import hashlib
-from core import config
+from ebmc.core import config
 
 
 def cut(l: str, n: int = config.MESSAGE_LENGTH):

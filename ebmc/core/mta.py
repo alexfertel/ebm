@@ -9,11 +9,11 @@ import smtplib
 import ssl
 import time
 
-from core import config
-from core.block import Block
-from core.user import User
-from core.decorators import thread, retry
-from core.message import Message
+from ebmc.core import config
+from ebmc.core.block import Block
+from ebmc.core.user import User
+from ebmc.core.decorators import thread, retry
+from ebmc.core.message import Message
 from email.message import EmailMessage
 from imbox import Imbox
 
