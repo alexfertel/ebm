@@ -258,6 +258,7 @@ class EBMS(rpyc.Service):
 
     # Returned data will be a 'pickled' object
     def exposed_get(self, key):
+        logger.debug(f'Key at get is: {key}')
         if inbetween(self.exposed_predecessor()[0] + 1, self.exposed_identifier(), key):
             data = self.data.get(key, None)
             if data:
