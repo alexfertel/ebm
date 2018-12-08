@@ -8,8 +8,8 @@ Our middleware has a client library and a server script, fully written in python
 
 ### Prerequisites
 
-* [Python 3.6](python 3.6) - The specific version used for this project
-* [imbox>=0.9.6](imbox github page) - IMAP client for humans.
+* [Python 3.6](https://www.python.org) - The specific version used for this project
+* [imbox>=0.9.6](https://github.com/martinrusev/imbox) - IMAP client for humans.
 
 ### Installation
 
@@ -31,18 +31,18 @@ You can install our middleware client **ebmc** or start a server of our middlewa
 
 ### Server
 
-Our server application is fully dockerized, but you can run it from source.
+Our server application is fully [dockerized](https://www.docker.com), but you can run it from source.
 
-On a side note, our server uses [python-fire](python-fire) for ease of use. The possible uses can be seen in the arguments of the `main` function inside `server.py` file.
+On a side note, our server uses [python-fire](https://github.com/google/python-fire) for ease of use. The possible uses can be seen in the arguments of the `main` function inside `server.py` file.
 
 #### Source
 
 First, we must install our server requirements:
 
-* [Python 3.6](python 3.6) - The specific version used for this project
-* [imbox>=0.9.6](imbox github page) - IMAP client for humans.
-* [rpyc=4.0.2](rpyc link) - Remote Python Call
-* [python-fire](python-fire link) - [python-fire description text]
+  * [Python 3.6](https://www.python.org) - The specific version used for this project
+  * [imbox>=0.9.6](https://github.com/martinrusev/imbox) - IMAP client for humans.
+  * [rpyc=4.0.2](https://rpyc.readthedocs.io/en/latest) - Remote Python Call
+  * [python-fire](https://github.com/google/python-fire) - Python Fire is a library for automatically generating command line interfaces (CLIs) from absolutely any Python object.
 
 Then, enter our source directory **src** and run our `server.py` script with the appropriate arguments.
 
@@ -55,9 +55,9 @@ cd ebm/src
 			--join-addr="('10.6.98.3', 18861)"
 ```
 
-This will start a new server joining our distributed [chord](wikipedia for chord) system in the address `--join-addr="('10.6.98.3', 18861)"`, in case of not setting the `--join-addr` argument the server assumes it itself is the first **chord** node.
+This will start a new server joining our distributed [chord](https://en.wikipedia.org/wiki/Chord_(peer-to-peer)) system in the address `--join-addr="('10.6.98.3', 18861)"`, in case of not setting the `--join-addr` argument the server assumes it itself is the first **chord** node.
 
-`--ip-addr` is this server's transport layer address, which is needed in case of running the [docker](docker link) image, if not you can omit this argument, the server will set its address correctly, further explained in our [article](file://article/article.pdf).
+`--ip-addr` is this server's transport layer address, which is needed in case of running the [docker](https://www.docker.com) image, if not you can omit this argument, the server will set its address correctly, further explained in our [article](https://github.com/white41/ebm/blob/master/article/article.pdf).
 
 `--server-email-addr` and `--pwd` refer to the client account our server will use to connect to `--email-server`.
 
@@ -69,7 +69,7 @@ With a shell prompt in our project's root path, we simply run:
 sudo docker build -t . ebm
 ```
 
-Thus, building our image requirements as shown inside our [Dockerfile](file://Dockerfile). Afterwards, let's start our container with any given port binding (which we'll have to remember) and then let's start a shell inside our container.
+Thus, building our image requirements as shown inside our [Dockerfile](https://github.com/white41/ebm/blob/master/Dockerfile). Afterwards, let's start our container with any given port binding (which we'll have to remember) and then let's start a shell inside our container.
 
 ```bash
 sudo docker run -d -p 18861:18861 --name ebm ebm:latest
