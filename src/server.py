@@ -13,7 +13,6 @@ from mta import Broker
 from user import User
 from utils import inbetween, hashing
 from decorators import *
-from data import Data
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('SERVER')
@@ -262,7 +261,7 @@ class EBMS(rpyc.Service):
         if inbetween(self.exposed_predecessor()[0] + 1, self.exposed_identifier(), key):
             data = self.data.get(key, None)
             if data:
-                return pickle.dumps(data) if isinstance(data, Data) else data
+                return pickle.dumps(data)
         else:
             succ = self.exposed_find_successor(key)
             return self.remote_request(succ[1], 'get', key)
@@ -313,7 +312,9 @@ class EBMS(rpyc.Service):
             """
         # TODO: ver como retorna los objetos el self.get
         subscription_list_id = hashing(event)
-        subscription_list = Data().from_tuple(pickle.loads(self.exposed_get(subscription_list_id)))
+
+        exists = self.exposed_get(subscription_list_id)
+        subscription_list = pickle.loads(exists) if exists else None
         if subscription_list:
             user_id = hashing(subscriber)
             # user_id = int(hashlib.sha1(subscriber.encode()).hexdigest(), 16)
@@ -324,7 +325,7 @@ class EBMS(rpyc.Service):
             msg = self.mta.build_message('SUBSCRIBED', protocol=config.PROTOCOLS['PUB/SUB'],
                                          topic=config.TOPICS['ANSWER'], message_id=message_id)
         else:
-            msg = self.mta.build_message('error', protocol=config.PROTOCOLS['PUB/SUB'], topic=config.TOPICS['ANSWER'],
+            msg = self.mta.build_message('ERROR', protocol=config.PROTOCOLS['PUB/SUB'], topic=config.TOPICS['ANSWER'],
                                          message_id=message_id)
         msg.send(self.mta, email_client, self.server_info)
 
@@ -340,8 +341,10 @@ class EBMS(rpyc.Service):
         :return: None
         """
         subscription_list_id = hashing(event)
+
         # subscription_list_id = int(hashlib.sha1(event.encode()).hexdigest(), 16)
-        subscription_list = Data().from_tuple(pickle.loads(self.exposed_get(subscription_list_id)))
+        exists = self.exposed_get(subscription_list_id)
+        subscription_list = pickle.loads(exists) if exists else None
         if subscription_list:
             user_id = hashing(subscriber)
             # user_id = int(hashlib.sha1(subscriber.encode()).hexdigest(), 16)
@@ -364,12 +367,22 @@ class EBMS(rpyc.Service):
         user_id = hashing(user)
         # user_id = hashlib.sha1(user.encode()).hexdigest()
 
-        subscriptions = Data().from_tuple(pickle.loads(self.exposed_get(subscription_list_id)))
-        if user_id == subscriptions['admin']:
-            content = ';'.join([
-                Data().from_tuple(pickle.loads(self.exposed_get(user_id)))['mail'] for user_id in subscriptions['list']
-            ])
+        subscription_list_id_exists = self.exposed_get(subscription_list_id)
+        subscriptions = pickle.loads(subscription_list_id_exists) if subscription_list_id_exists else None
 
+        # subscriptions = Data().from_tuple(pickle.loads(self.exposed_get(subscription_list_id)))
+        if user_id == subscriptions['admin']:
+            emails = []
+            for user_id in subscriptions['list']:
+                exists = self.exposed_get(user_id)
+                user_email = pickle.loads(exists)['mail'] if exists else None
+                if user_email:
+                    emails.append(user_email)
+
+            content = ';'.join(emails)
+            # content = ';'.join([
+            #     pickle.loads(self.exposed_get(user_id)))['mail'] for user_id in subscriptions['list']
+            # ])
             msg = self.mta.build_message(body=content, protocol=config.PROTOCOLS['PUB/SUB'],
                                          topic=config.TOPICS['ANSWER'], message_id=message_id)
         else:
@@ -384,7 +397,7 @@ class EBMS(rpyc.Service):
         # subscription_list_id = hashlib.sha1(event.encode()).hexdigest()
         # user_id = hashlib.sha1(user.encode()).hexdigest()
         exists = self.exposed_get(subscription_list_id)
-        subscriptions = Data().from_tuple(pickle.loads(exists)) if exists else None
+        subscriptions = pickle.loads(exists) if exists else None
 
         if not subscriptions:
             event = pickle.dumps({
@@ -403,10 +416,17 @@ class EBMS(rpyc.Service):
     def send(self, user: str, email_client: str, message_id: str):
         user_id = hashing(user)
         # user_id = hashlib.sha1(user.encode()).hexdigest()
-        user_mail = Data().from_tuple(pickle.loads(self.exposed_get(user_id)))['mail']
+        exists = self.exposed_get(user_id)
+        user_mail = pickle.loads(exists)['mail'] if exists else None
+        # user_mail = Data().from_tuple(pickle.loads(self.exposed_get(user_id)))['mail']
 
-        msg = self.mta.build_message(user_mail, protocol=config.PROTOCOLS['DATA'], topic=config.TOPICS['ANSWER'],
-                                     message_id=message_id)
+        if user_mail:
+            msg = self.mta.build_message(user_mail, protocol=config.PROTOCOLS['DATA'], topic=config.TOPICS['ANSWER'],
+                                         message_id=message_id)
+        else:
+            logger.error(f'User {user} not found in chord')
+            msg = self.mta.build_message('ERROR', protocol=config.PROTOCOLS['DATA'],
+                                         topic=config.TOPICS['ANSWER'], message_id=message_id)
         msg.send(self.mta, email_client, self.server_info)
 
     def login(self, user: str, pwd: str, user_mail: str, message_id: str):
@@ -417,7 +437,7 @@ class EBMS(rpyc.Service):
         # pwd = hashlib.sha1(pwd.encode()).hexdigest()
 
         exists = self.exposed_get(user_id)
-        chord_user = Data().from_tuple(pickle.loads(exists)) if exists else None
+        chord_user = pickle.loads(exists) if exists else None
         if chord_user['pwd'] == pwd:
             msg = self.mta.build_message(str(user_id), protocol=config.PROTOCOLS['CONFIG'],
                                          topic=config.TOPICS['LOGIN'], message_id=message_id)
@@ -431,7 +451,7 @@ class EBMS(rpyc.Service):
         user_id = hashing(user)
         # user_id = hashlib.sha1(user.encode()).hexdigest()
         exists = self.exposed_get(user_id)
-        chord_user = Data().from_tuple(pickle.loads(exists)) if exists else None
+        chord_user = pickle.loads(exists) if exists else None
         # TODO: Recordar cambiar todos los loads a exists xq puede devolver None
         if not chord_user:
             pwd = hashing(pwd)
@@ -463,18 +483,18 @@ class EBMS(rpyc.Service):
                         self.register(user_pass_email[0], user_pass_email[1], user_pass_email[2], block.id)
                     elif block.subject['topic'] == config.TOPICS['LOGIN']:
                         user_pass = block.text.split('\n')
-                        self.login(user_pass[0], user_pass[1], block.email, block['From'])
+                        self.login(user_pass[0], user_pass[1], block.sent_to, block['From'])
                     elif block.subject['topic'] == config.TOPICS['CMD']:
                         self.send(block.text, block['From'], block.id)
                     elif block.subject['topic'] == config.TOPICS['PUBLICATION']:
-                        self.publish(block.subject['user'], block.text, block.email, block.id)
+                        self.publish(block.subject['user'], block.text, block.sent_to, block.id)
                     elif block.subject['topic'] == config.TOPICS['SUBSCRIPTION']:
-                        self.subscribe(block.subject['user'], block.text, block.email, block.id)
+                        self.subscribe(block.subject['user'], block.text, block.sent_to, block.id)
                     elif block.subject['topic'] == config.TOPICS['UNSUBSCRIPTION']:
-                        self.unsubscribe(block.subject['user'], block.text, block.email, block.id)
+                        self.unsubscribe(block.subject['user'], block.text, block.sent_to, block.id)
                     else:
                         # block.subject['topic'] == config.TOPICS['CREATE']
-                        self.create_event(block.subject['user'], block.text, block.email, block.id)
+                        self.create_event(block.subject['user'], block.text, block.sent_to, block.id)
 
 
 def main(server_email_addr: str = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6)),
