@@ -1,11 +1,10 @@
 FROM ubuntu
 
-MAINTAINER alexfertel97@gmail.com s
+LABEL maintainer.alex="alexfertel97@gmail.com" maintainer.sandor="s.martin@estudiantes.matcom.uh.cu"
 
-RUN apt-get update && apt install python3.6 && python3.6 -m pip install plumbum rpyc imbox flask && mkdir /usr/ebm && mkdir /usr/ebm && mkdir /usr/sender-app
+RUN apt-get update \
+    && apt-get install -y python3.6 \
+    && python3.6 -m pip install plumbum rpyc imbox \
+    && mkdir /usr/ebm
 
-COPY src /usr/ebm
-COPY ebmc /usr/ebmc
-COPY sender-app /usr/sender-app
-
-WORKDIR /usr/
+COPY src /usr/ebm/
