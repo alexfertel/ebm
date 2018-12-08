@@ -5,7 +5,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'src/uploads')
 
 
-MESSAGE_LENGTH = 1e6
+MESSAGE_LENGTH = 1000000
 SYS_MSG = 0
 DATA_MSG = 1
 MAX_BITS = 32

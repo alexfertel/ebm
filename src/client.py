@@ -2,11 +2,11 @@
 import copy
 import time
 
-from .mta import Broker
-from .decorators import thread
-from .config import PROTOCOLS, TOPICS
-from .utils import *
-from .user import User
+from mta import Broker
+from decorators import thread
+from config import PROTOCOLS, TOPICS
+from utils import *
+from user import User
 
 import logging
 
@@ -38,13 +38,14 @@ class EBMC:
     # returns an ID
     @thread
     def register(self, user, password):
-        content = user+'\n'+password+'\n'+self.user_info.active_email
+        content = f'{user}\n{password}\n{self.user_info.active_email}'
+        # content = user+'\n'+password+'\n'+self.user_info.active_email
         msg = self.mta.build_message(
-            body= content,
+            body=content,
             protocol=PROTOCOLS['CONFIG'],
             topic=TOPICS['REGISTER']
         )
-        logger.info(f'User: {user} Pass: {password} Server {self.server_email_addr}')
+        logger.info(f'{user}\n{password}\n{self.server_email_addr}')
         logger.info(f'Msg is: {msg}')
         msg.send(self.mta, self.server_email_addr, self.user_info)
 

@@ -2,20 +2,11 @@
 from .config import *
 
 
-def cut(body: str, size: int = MESSAGE_LENGTH) -> list:
-    length = len(body)
-    if size > length:
-        val = ''
-        result = []
-        for i in range(length):
-            if i % size == 0:
-                result.append(val)
-                val = ''
-            else:
-                val += body[i] if i != length else body[i]
-        return result
-    else:
-        return [body]
+def cut(l: str, n: int = MESSAGE_LENGTH):
+    result = []
+    for i in range(0, len(l), n):
+        result.append(l[i:i + n])
+    return result
 
 
 def inbetween(a, b, c):

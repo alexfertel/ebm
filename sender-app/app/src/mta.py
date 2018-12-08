@@ -49,8 +49,8 @@ class Broker:
 
     @property
     def config_queue(self):
-        self._data_queue.sort(key=lambda x: x.index)
-        return self._data_queue
+        self._config_queue.sort(key=lambda x: x.index)
+        return self._config_queue
 
     def enqueue(self, blocks: list):
         """
