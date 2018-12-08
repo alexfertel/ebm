@@ -46,3 +46,5 @@ rpyc*
 plumbum*
 ebm.tar.xz
 src/data.json
+ebmc/**/*
+setup.py

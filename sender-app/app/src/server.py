@@ -11,7 +11,7 @@ import string
 
 from mta import Broker
 from user import User
-from utils import inbetween, hashing
+from utils import inbetween
 from decorators import *
 from data import Data
 
@@ -29,7 +29,7 @@ class EBMS(rpyc.Service):
         self.active_users = []
 
         # Chord setup
-        self.__id = int(hashlib.sha1(str(server_email_addr).encode()).hexdigest(), 16)
+        self.__id = int(hashlib.sha1(str(server_email_addr).encode()).hexdigest(), 16) % config.SIZE
         # Compute  Table computable properties (start, interval).
 
         self.server_info = User(server_email_addr, pwd)
@@ -67,6 +67,8 @@ class EBMS(rpyc.Service):
         logger.debug(f'Starting join of server: {self.exposed_identifier()}')
         self.exposed_join(join_addr)  # Join chord
         logger.debug(f'Ended join of server: {self.exposed_identifier()}')
+
+        self.multiplexer()
 
     # @retry_times(config.RETRY_ON_FAILURE_TIMES)
     def remote_request(self, addr, method, *args):
@@ -199,10 +201,7 @@ class EBMS(rpyc.Service):
         self.update_successors()
 
         logger.debug(f'Start replicating data of: {self.exposed_identifier()}')
-        self.replicate()
-
-        logger.debug(f'Start multiplexing in: {self.exposed_identifier()}')
-        self.multiplexer()
+        self.update_successors()
 
     # periodically verify n's immediate succesor,
     # and tell the exposed_successor about n.
@@ -258,14 +257,12 @@ class EBMS(rpyc.Service):
 
     # Returned data will be a 'pickled' object
     def exposed_get(self, key):
-        logger.debug(f'Key at get is: {key}')
-        if inbetween(self.exposed_predecessor()[0] + 1, self.exposed_identifier(), key):
-            data = self.data.get(key, None)
-            if data:
-                return pickle.dumps(data) if isinstance(data, Data) else data
-        else:
-            succ = self.exposed_find_successor(key)
-            return self.remote_request(succ[1], 'get', key)
+        data = self.data.get(key, None)
+        if data:
+            return data.to_tuple() if isinstance(data, Data) else data
+
+        succ = self.exposed_find_successor(key)
+        return self.remote_request(succ[1], 'get', key)
 
     # value param must be a 'pickled' object
     def exposed_set(self, key, value):
@@ -312,11 +309,10 @@ class EBMS(rpyc.Service):
             :return: None
             """
         # TODO: ver como retorna los objetos el self.get
-        subscription_list_id = hashing(event)
-        subscription_list = Data().from_tuple(pickle.loads(self.exposed_get(subscription_list_id)))
+        subscription_list_id = hashlib.sha1(event.encode()).hexdigest()
+        subscription_list = Data.from_tuple(pickle.loads(self.exposed_get(subscription_list_id)))
         if subscription_list:
-            user_id = hashing(subscriber)
-            # user_id = int(hashlib.sha1(subscriber.encode()).hexdigest(), 16)
+            user_id = hashlib.sha1(subscriber.encode()).hexdigest()
             subscription_list['list'].push(user_id)
             subscription_list = pickle.dumps(subscription_list)
             self.exposed_set(subscription_list_id, subscription_list)
@@ -339,12 +335,11 @@ class EBMS(rpyc.Service):
         :param event: str
         :return: None
         """
-        subscription_list_id = hashing(event)
-        # subscription_list_id = int(hashlib.sha1(event.encode()).hexdigest(), 16)
-        subscription_list = Data().from_tuple(pickle.loads(self.exposed_get(subscription_list_id)))
+        subscription_list_id = hashlib.sha1(event.encode()).hexdigest()
+        subscription_list = Data.from_tuple(pickle.loads(self.exposed_get(subscription_list_id)))
+        # TODO: ver que retorna para q no se roma el if
         if subscription_list:
-            user_id = hashing(subscriber)
-            # user_id = int(hashlib.sha1(subscriber.encode()).hexdigest(), 16)
+            user_id = hashlib.sha1(subscriber.encode()).hexdigest()
             subscription_list['list'].remove(user_id)
             subscription_list = pickle.dumps(subscription_list)
 
@@ -359,15 +354,13 @@ class EBMS(rpyc.Service):
         msg.send(self.mta, email_client, self.server_info)
 
     def publish(self, user: str, event: str, email_client: str, message_id: str):
-        subscription_list_id = hashing(event)
-        # subscription_list_id = int(hashlib.sha1(event.encode()).hexdigest(), 16)
-        user_id = hashing(user)
-        # user_id = hashlib.sha1(user.encode()).hexdigest()
+        subscription_list_id = hashlib.sha1(event.encode()).hexdigest()
+        user_id = hashlib.sha1(user.encode()).hexdigest()
 
-        subscriptions = Data().from_tuple(pickle.loads(self.exposed_get(subscription_list_id)))
+        subscriptions = Data.from_tuple(pickle.loads(self.exposed_get(subscription_list_id)))
         if user_id == subscriptions['admin']:
             content = ';'.join([
-                Data().from_tuple(pickle.loads(self.exposed_get(user_id)))['mail'] for user_id in subscriptions['list']
+                Data.from_tuple(pickle.loads(self.exposed_get(user_id)))['mail'] for user_id in subscriptions['list']
             ])
 
             msg = self.mta.build_message(body=content, protocol=config.PROTOCOLS['PUB/SUB'],
@@ -379,13 +372,10 @@ class EBMS(rpyc.Service):
         msg.send(self.mta, email_client, self.server_info)
 
     def create_event(self, user: str, event: str, email_client: str, message_id: str):
-        subscription_list_id = hashing(event)
-        user_id = hashing(user)
-        # subscription_list_id = hashlib.sha1(event.encode()).hexdigest()
-        # user_id = hashlib.sha1(user.encode()).hexdigest()
-        exists = self.exposed_get(subscription_list_id)
-        subscriptions = Data().from_tuple(pickle.loads(exists)) if exists else None
-
+        subscription_list_id = hashlib.sha1(event.encode()).hexdigest()
+        user_id = hashlib.sha1(user.encode()).hexdigest()
+        subscriptions = Data.from_tuple(pickle.loads(self.exposed_get(subscription_list_id)))
+        # TODO: ver que retorna no valla a ser que el if no funcione
         if not subscriptions:
             event = pickle.dumps({
                 'list': [],
@@ -401,41 +391,33 @@ class EBMS(rpyc.Service):
         msg.send(self.mta, email_client, self.server_info)
 
     def send(self, user: str, email_client: str, message_id: str):
-        user_id = hashing(user)
-        # user_id = hashlib.sha1(user.encode()).hexdigest()
-        user_mail = Data().from_tuple(pickle.loads(self.exposed_get(user_id)))['mail']
+        user_id = hashlib.sha1(user.encode()).hexdigest()
+        user_mail = Data.from_tuple(pickle.loads(self.exposed_get(user_id)))['mail']
 
-        msg = self.mta.build_message(user_mail, protocol=config.PROTOCOLS['DATA'], topic=config.TOPICS['ANSWER'],
+        msg = self.mta.build_message(user_mail, protocol=config.config.PROTOCOLS['DATA'], topic=config.TOPICS['ANSWER'],
                                      message_id=message_id)
         msg.send(self.mta, email_client, self.server_info)
 
     def login(self, user: str, pwd: str, user_mail: str, message_id: str):
-        user_id = hashing(user)
-        pwd = hashing(pwd)
+        user_id = hashlib.sha1(user.encode()).hexdigest()
+        pwd = hashlib.sha1(pwd.encode()).hexdigest()
 
-        # user_id = hashlib.sha1(user.encode()).hexdigest()
-        # pwd = hashlib.sha1(pwd.encode()).hexdigest()
-
-        exists = self.exposed_get(user_id)
-        chord_user = Data().from_tuple(pickle.loads(exists)) if exists else None
-        if chord_user['pwd'] == pwd:
-            msg = self.mta.build_message(str(user_id), protocol=config.PROTOCOLS['CONFIG'],
+        user = Data.from_tuple(pickle.loads(self.exposed_get(user_id)))
+        if user['pass'] == pwd:
+            msg = self.mta.build_message(user_id, protocol=config.config.PROTOCOLS['CONFIG'],
                                          topic=config.TOPICS['LOGIN'], message_id=message_id)
         else:
-            msg = self.mta.build_message('', protocol=config.PROTOCOLS['CONFIG'],
+            msg = self.mta.build_message('', protocol=config.config.PROTOCOLS['CONFIG'],
                                          topic=config.TOPICS['LOGIN'], message_id=message_id)
 
         msg.send(self.mta, user_mail, self.server_info)
 
     def register(self, user: str, pwd: str, user_mail: str, message_id: str):
-        user_id = hashing(user)
-        # user_id = hashlib.sha1(user.encode()).hexdigest()
-        exists = self.exposed_get(user_id)
-        chord_user = Data().from_tuple(pickle.loads(exists)) if exists else None
-        # TODO: Recordar cambiar todos los loads a exists xq puede devolver None
-        if not chord_user:
-            pwd = hashing(pwd)
-            # pwd = hashlib.sha1(pwd.encode()).hexdigest()
+        user_id = hashlib.sha1(user.encode()).hexdigest()
+        user = Data.from_tuple(pickle.loads(self.exposed_get(user_id)))
+        # TODO: ver que rerorna esto, pq puede que no sira el if
+        if not user:
+            pwd = hashlib.sha1(pwd.encode()).hexdigest()
             user = pickle.dumps(
                 {
                     'mail': user_mail,
@@ -444,10 +426,10 @@ class EBMS(rpyc.Service):
                 }
             )
             self.exposed_set(user_id, user)
-            msg = self.mta.build_message(str(user_id), protocol=config.PROTOCOLS['CONFIG'],
+            msg = self.mta.build_message(user_id, protocol=config.config.PROTOCOLS['CONFIG'],
                                          topic=config.TOPICS['REGISTER'], message_id=message_id)
         else:
-            msg = self.mta.build_message('ERROR', protocol=config.PROTOCOLS['CONFIG'],
+            msg = self.mta.build_message('ERROR', protocol=config.config.PROTOCOLS['CONFIG'],
                                          topic=config.TOPICS['REGISTER'], message_id=message_id)
 
         msg.send(self.mta, user_mail, self.server_info)

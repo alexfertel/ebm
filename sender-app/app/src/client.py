@@ -2,11 +2,11 @@
 import copy
 import time
 
-from mta import Broker
-from decorators import thread
-from config import PROTOCOLS, TOPICS
-from utils import *
-from user import User
+from .mta import Broker
+from .decorators import thread
+from .config import PROTOCOLS, TOPICS
+from .utils import *
+from .user import User
 
 import logging
 
@@ -41,7 +41,7 @@ class EBMC:
         content = f'{user}\n{password}\n{self.user_info.active_email}'
         # content = user+'\n'+password+'\n'+self.user_info.active_email
         msg = self.mta.build_message(
-            body=content,
+            body= content,
             protocol=PROTOCOLS['CONFIG'],
             topic=TOPICS['REGISTER']
         )

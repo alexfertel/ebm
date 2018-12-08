@@ -11,12 +11,12 @@ import time
 import config
 import logging
 
-from block import Block
-from user import User
-from decorators import *
+from .block import Block
+from .user import User
+from .decorators import *
 from imbox import Imbox
 from email.message import EmailMessage
-from message import Message
+from .message import Message
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('SERVER')

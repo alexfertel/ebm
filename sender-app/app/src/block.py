@@ -1,5 +1,6 @@
 import logging
 import json
+import ast
 
 from email.message import EmailMessage
 
