@@ -130,7 +130,7 @@ class EBMC:
         msg.send(self.mta, self.server_email_addr, self.user_info)
 
     @property
-    def recived(self) -> tuple:
+    def received(self) -> tuple:
         """
         :return: list: (id_message, name_location)
         """

@@ -2,14 +2,13 @@
 import copy
 import time
 
-from mta import Broker
-from decorators import thread
-from config import PROTOCOLS, TOPICS
-from utils import *
-from user import User
+from ebmc.core.mta import Broker
+from ebmc.core.decorators import thread
+from ebmc.core.config import PROTOCOLS, TOPICS
+from ebmc.core.utils import *
+from ebmc.core.user import User
 
 import logging
-
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('CLIENT')
@@ -32,8 +31,6 @@ class EBMC:
 
         self.user = ''
         self.token = ''
-
-        # TODO: This needs tuning, i realized we aren't seeing the addresses correctly
 
     # returns an ID
     @thread
@@ -130,7 +127,7 @@ class EBMC:
         msg.send(self.mta, self.server_email_addr, self.user_info)
 
     @property
-    def recived(self) -> tuple:
+    def received(self) -> tuple:
         """
         :return: list: (id_message, name_location)
         """
