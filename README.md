@@ -66,27 +66,28 @@ This will start a new server joining our distributed [chord](https://en.wikipedi
 With a shell prompt in our project's root path, we simply run:
 
 ```bash
-sudo docker build -t . ebm
+sudo docker build -t . ebm:latest
 ```
 
-Thus, building our image requirements as shown inside our [Dockerfile](https://github.com/white41/ebm/blob/master/Dockerfile). Afterwards, let's start our container with any given port binding (which we'll have to remember) and then let's start a shell inside our container.
+Thus, building our image requirements as shown inside our [Dockerfile](https://github.com/white41/ebm/blob/master/Dockerfile). Afterwards, let's start our container with any given port binding (which we'll have to remember).
 
 ```bash
-sudo docker run -d -p 18861:18861 --name ebm ebm:latest
-sudo docker exec -it ebm bash
-```
-
-Now, we are given a prompt inside the `/usr/ebm` directory, so let's start our server instance.
-
-```bash
-cd src && ./server.py --server-email-addr="ebms@estudiantes.matcom.uh.cu" \
-                      --pwd="password" \
-                      --email-server="correo.estudiantes.matcom.uh.cu" \
-                      --ip-addr="('10.6.98.203', 18861)" \
-                      --join-addr="('10.6.98.3', 18861)"
+sudo docker run -d -p PORT:PORT --name ebm ebm:latest python3.6 \
+                  /usr/ebm/src/server.py
+                  --server-email-addr="ebms@estudiantes.matcom.uh.cu" \
+                  --pwd="password" \
+                  --email-server="correo.estudiantes.matcom.uh.cu" \
+                  --ip-addr="('10.6.98.203', PORT)" \
+                  --join-addr="('10.6.98.3', PORT)"
 ```
 
 Starting our server instance which is equivalent to the *Source* section instance.
+
+If we want to see what our server logs, we can run:
+
+```bash
+sudo docker logs -f ebm
+```
 
 This shows that putting our server in development is really straight-forward and that we can have potentially infinite ;) instances in the same host, in the same docker daemon or in as many hosts as we want, scaling horizontally with ease.
 
