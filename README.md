@@ -3,26 +3,29 @@
 EBM es un middleware ideado para utilizar Email como capa de transporte
 
 ## Instalación
-````
-pip install ebm  
-````
+
+```
+    pip install ebm  
+```
+
 :(
 
-##Uso servidor
+## Uso servidor
 
-##Uso cliente
-````
-import ebm
-ebm = ebm.EBMC('user_client','s@g.com','server.com','pwd')
-ebm.register('user','pwd')
+## Uso cliente
 
-ebm.login('user','pwd')
+```
+    import ebm
+    ebm = ebm.EBMC('user_client','s@g.com','server.com','pwd')
+    ebm.register('user','pwd')
 
-ebm.send('another_user', 'data to send', 'name of the package')
+    ebm.login('user','pwd')
 
-###### Received data are in
-ebm.received
-````
+    ebm.send('another_user', 'data to send', 'name of the package')
+
+###### Received data is in
+    ebm.received
+```
 
 *By*:
 
