@@ -342,7 +342,6 @@ class EBMS(rpyc.Service):
         subscription_list_id = hashing(event)
         # subscription_list_id = int(hashlib.sha1(event.encode()).hexdigest(), 16)
         subscription_list = Data().from_tuple(pickle.loads(self.exposed_get(subscription_list_id)))
-        # TODO: ver que retorna para q no se roma el if
         if subscription_list:
             user_id = hashing(subscriber)
             # user_id = int(hashlib.sha1(subscriber.encode()).hexdigest(), 16)
@@ -384,8 +383,9 @@ class EBMS(rpyc.Service):
         user_id = hashing(user)
         # subscription_list_id = hashlib.sha1(event.encode()).hexdigest()
         # user_id = hashlib.sha1(user.encode()).hexdigest()
-        subscriptions = Data().from_tuple(pickle.loads(self.exposed_get(subscription_list_id)))
-        # TODO: ver que retorna no valla a ser que el if no funcione
+        exists = self.exposed_get(subscription_list_id)
+        subscriptions = Data().from_tuple(pickle.loads(exists)) if exists else None
+
         if not subscriptions:
             event = pickle.dumps({
                 'list': [],
@@ -416,8 +416,9 @@ class EBMS(rpyc.Service):
         # user_id = hashlib.sha1(user.encode()).hexdigest()
         # pwd = hashlib.sha1(pwd.encode()).hexdigest()
 
-        user = Data().from_tuple(pickle.loads(self.exposed_get(user_id)))
-        if user['pass'] == pwd:
+        exists = self.exposed_get(user_id)
+        chord_user = Data().from_tuple(pickle.loads(exists)) if exists else None
+        if chord_user['pass'] == pwd:
             msg = self.mta.build_message(str(user_id), protocol=config.PROTOCOLS['CONFIG'],
                                          topic=config.TOPICS['LOGIN'], message_id=message_id)
         else:
@@ -429,9 +430,10 @@ class EBMS(rpyc.Service):
     def register(self, user: str, pwd: str, user_mail: str, message_id: str):
         user_id = hashing(user)
         # user_id = hashlib.sha1(user.encode()).hexdigest()
-        user = Data().from_tuple(pickle.loads(self.exposed_get(user_id)))
-        # TODO: ver que rerorna esto, pq puede que no sira el if
-        if not user:
+        exists = self.exposed_get(user_id)
+        chord_user = Data().from_tuple(pickle.loads(exists)) if exists else None
+        # TODO: Recordar cambiar todos los loads a exists xq puede devolver None
+        if not chord_user:
             pwd = hashing(pwd)
             # pwd = hashlib.sha1(pwd.encode()).hexdigest()
             user = pickle.dumps(
