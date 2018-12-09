@@ -46,6 +46,8 @@ class EBMS(rpyc.Service):
 
         self.failed_nodes = []  # list of successor nodes
 
+        self.next_replica = 0
+
         # This server keys
         self.data = {}
 
@@ -198,6 +200,7 @@ class EBMS(rpyc.Service):
         self.update_successors()
 
         logger.debug(f'Start replicating data of: {self.exposed_identifier()}')
+        self.next_replica = 0  # If a node rejoins network, restart replication.
         self.replicate()
 
         logger.debug(f'Start multiplexing in: {self.exposed_identifier()}')
@@ -296,9 +299,13 @@ class EBMS(rpyc.Service):
     # This should periodically move keys to a new node
     @retry(config.REPLICATION_DELAY)
     def replicate(self):
-        i = random.randint(0, len(self.successors))
-        for k, v in self.data.items():
-            self.remote_request(self.successors[i][1], 'set', k, pickle.dumps(v))
+        # i = random.randint(0, len(self.successors))
+        # Check if there's only one Chord Node
+        if self.exposed_successor()[0] != self.exposed_identifier():
+            for k, v in self.data.items():
+                self.remote_request(self.successors[self.next_replica][1], 'set', k, pickle.dumps(v))
+
+            self.next_replica = (self.next_replica + 1) % config.SUCC_COUNT
 
     # ####################################################### MQ #######################################################
     def subscribe(self, subscriber: str, event: str, email_client: str, message_id: str):
@@ -310,7 +317,6 @@ class EBMS(rpyc.Service):
             :param message_id: str
             :return: None
             """
-        # TODO: ver como retorna los objetos el self.get
         subscription_list_id = hashing(event)
 
         exists = self.exposed_get(subscription_list_id)
@@ -452,7 +458,6 @@ class EBMS(rpyc.Service):
         # user_id = hashlib.sha1(user.encode()).hexdigest()
         exists = self.exposed_get(user_id)
         chord_user = pickle.loads(exists) if exists else None
-        # TODO: Recordar cambiar todos los loads a exists xq puede devolver None
         if not chord_user:
             pwd = hashing(pwd)
             # pwd = hashlib.sha1(pwd.encode()).hexdigest()
