@@ -40,19 +40,12 @@
 %% Hay que decirle que incluya el título en el documento
 \maketitle
 
-%% Aquí podemos añadir un resumen del trabajo (o del artículo en su caso) 
 \begin{abstract}
 	
 Este artículo es parte del proyecto Middleware Basado en Emails de la asignatura Sistemas Distribuidos.
 En dicho documento explicamos la parte teórica del funcionamiento del proyecto.
 
 \end{abstract}
-
-%% Iniciamos "secciones" que servirán como subtítulos
-%% Nota que hay otra manera de añadir acentos
-\section{Introducci\'on}
-
-Este artículo esta dividido en X secciones. La Sección 1 trata sobre algo, la Sección 2 trata sobre algo más y así sucesivamente.
 
 \section{Arquitectura}
 	\subsection{Cliente - Servidor}
@@ -92,7 +85,34 @@ Al utilizar como transporte para comunicar dos aplicaciones correos y querer gar
 	
 	\subsection{Bloques y Mensajes}
 	Nuestra aplicación convierte la información que se desea enviar en instancias de la clase \emph{Message}.
-	Es decir, a la hora de enviar un mensaje, cualquiera que este sea, lo convertimos en una instancia de \emph{Message}, asignándole un identificador que refleja su orden. 
+	Es decir, a la hora de enviar un mensaje, cualquiera que este sea, lo convertimos en una instancia de \emph{Message}, asignándole un identificador que refleja su orden (tiempo actual). Además, mantenemos una cola de mensajes en cada parte de la comunicación tal que antes de enviar y al recibir ordenamos los mensajes. Esto garantiza el correcto orden de los mensajes si asumimos que todos llegan al destinatario, lo cual sabemos que es improbable, sino imposible. El protocolo \emph{SMTP} no garantiza confiabilidad a la hora de entregar los correos, lo cual quisimos arreglar justo como \emph{TCP}, manteniendo una ventana (window) y respondiendo a los mensajes con \emph{acknowledgements} o \emph{ACKs}, pero no pudimos.
+	
+	Nos enfrentamos a otro problema, los correos tienen un tamaño limitado, por lo cual, si nuestro mensaje tiene longitud mayor a la soportada por el servidor de correo, no podemos enviarlo. Como solución definimos una nueva clase \emph{Block} de forma tal que todo \emph{Message} esta formado por una lista de bloques, y en realidad son los bloques (al heredar de \emph{email.message.EmailMessage}) los verdaderos correos electrónicos que envía nuestro middleware.
+	
+	\subsection{Broker}
+	En la literatura (y en economía), un \emph{broker} es una entidad que arregla transacciones entre 2 o más partes, nosotros definimos la clase \emph{Broker} que se encarga del manejo de todo el trabajo con los mensajes, bloques y correos electrónicos y de la cual tanto \emph{EBMC} como \emph{EBMS} mantienen una instancia asociada.
+	
+	Dicha clase mantiene un hilo leyendo del servidor de correo a través del protocolo \emph{IMAP}, mantiene otro hilo procesando 2 colas, una de configuración y otra de datos y además procesa todos los bloques y los empareja con sus respectivas instancias de \emph{Message} traduciendo de correo electrónico a \emph{Block}.
+	
+\section{Estructura}
+Hablemos un poco de la estructura de nuestros servidores y los protocolos que definimos.
+
+	\subsection{Asunto}
+	Si un usuario desea utilizar nuestro middleware, primero debe registrarse e iniciar sesión en nuestra aplicación, para luego realizar cualquier acción que oferta el middleware. Notemos que los mensajes de registro solo interactúan con el servidor asociado a dicho cliente y luego de ser procesados el servidor interactúa con el sistema, esta acción es diferente a, por ejemplo, hacer una publicación, que requiere resolver los ususarios suscritos al que publica y luego enrutar correos a cada uno de los suscriptores.
+	 
+	Por tanto se hace necesario definir protocolos para así multiplexar las acciones de nuestro servidor. Nuestra solución se basa en un formato bien conocido haciendo uso de los asuntos de los correos. Un \emph{subject} o asunto, es un diccionario que usando la biblioteca \emph{json} convertimos a texto y enviamos en cada asunto de cada bloque(correo), dicho asunto contiene "metadatos", sobre el bloque y resuelve el multiplexado de los mensajes.
+	
+	Definimos dos tipos de mensajes y por tanto dos colas de mensajes, mensajes de configuración y mensajes de datos. Los mensajes de configuración cambian la información subyacente en \emph{Chord}, mientras que los mensajes de datos, envían información de un cliente a otro.
+	
+	 
+	\subsection{Enrutado}
+	Para enviar un mensaje, podemos pensar en cómo es mejor, desde el punto de vista de eficiencia, resolver el destinatario, que dado que un usuario no está identificado por una dirección de correo, es un problema, además, deseamos minimizar la cantidad de correos. Una solución sencilla e intuitiva a este problema, y es una de las razones por las que surge la necesidad de usar \emph{Chord} (o algún protocolo de almacenamiento de datos, consistente), es guardar un mapeo entre identificadores y la dirección de correo por la que responde el usuario actualmente. 
+	
+	Esto garantiza que para enviar un mensaje solo se necesiten tres direcciones de correo, el usuario que desea enviar el mensaje, el servidor asociado al usuario y el destinatario, el cual es resuelto en $O(logN)$ gracias a \emph{Chord}. Se envían además solo tres mensajes (asumiendo que no se ha implementado la funcionalidad de los \emph{ACK}), un correo de configuración del \emph{ebmc} al servidor de correo asociado a dicho usuario, un correo de vuelta al usuario con el correo del destinatario resuelto y finalmente, un mensaje al destinatario, donde por mensajes decimos todos los bloques que sean necesarios para hacer llegar el contenido del mensaje al destinatario.
+	
+
+\section{Tecnologías}
+Para la implementación del proyecto se utilizó \emph{Python 3.6}. La biblioteca \emph{imbox} se utilizó para el manejo de las conexiónes a servidores \emph{IMAP}, esta biblioteca es muy simple de usar y facilita mucho el parseo de los correos electrónicos. Para la implementación de \emph{Chord}, utilizamos \emph{rpyc} \bfseries{Remote Python Call}, una biblioteca para el trabajo con objetos remotos (RPC). Usamos \emph{docker} para facilitar el desarrollo y puesta en producción de la aplicación y \emph{python-fire} para facilitar la inicialización del servidor desde una \emph{CLI}. Trabajamos con \emph{smtplib} para el envío de correos.
 
 
 \end{document}
