@@ -4,7 +4,7 @@ import logging
 
 from threading import Thread
 
-logging.basicConfig(level=logging.DEBUG)
+# logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('DECORATOR')
 
 thread_count = 0
@@ -21,8 +21,9 @@ def retry(sleep_time=1):
         def wrapper(*args, **kwargs):
             global thread_count
             th = Thread(target=loop, args=(f, sleep_time, args, kwargs))
-            logger.info(f'Thread Count: {thread_count}')
             thread_count += 1
+            logger.info(f'\nStarted thread with retry loop for function: {f.__name__}.')
+            logger.info(f'Thread Count: {thread_count}.\n')
             th.daemon = True
             th.start()
 

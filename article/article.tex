@@ -1,0 +1,98 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Plantilla para un artículo en LaTeX en español.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Qué tipo de documento estamos por comenzar:
+\documentclass[a4paper]{article}
+% Esto es para que el LaTeX sepa que el texto está en español:
+\usepackage[spanish]{babel}
+\selectlanguage{spanish}
+% Esto es para poder escribir acentos directamente:
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+
+
+%% Asigna un tamaño a la hoja y los márgenes
+\usepackage[a4paper,top=3cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
+
+%% Paquetes de la AMS
+\usepackage{amsmath, amsthm, amsfonts}
+%% Para añadir archivos con extensión pdf, jpg, png or tif
+\usepackage{graphicx}
+\usepackage[colorinlistoftodos]{todonotes}
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+
+%% Primero escribimos el título
+\title{Email Based Middleware \LaTeX}
+\author{Alexander A. González Fertel, Sandor Martín \\
+  \small Universidad de la Habana\\
+  \small Facultad de Matemática y Computación\\
+  \small alexfertel97@gmail.com, s.martin@estudiantes.matcom.uh.cu
+  \date{}
+}
+
+%% Después del "preámbulo", podemos empezar el documento
+
+\begin{document}
+%% Hay que decirle que incluya el título en el documento
+\maketitle
+
+%% Aquí podemos añadir un resumen del trabajo (o del artículo en su caso) 
+\begin{abstract}
+	
+Este artículo es parte del proyecto Middleware Basado en Emails de la asignatura Sistemas Distribuidos.
+En dicho documento explicamos la parte teórica del funcionamiento del proyecto.
+
+\end{abstract}
+
+%% Iniciamos "secciones" que servirán como subtítulos
+%% Nota que hay otra manera de añadir acentos
+\section{Introducci\'on}
+
+Este artículo esta dividido en X secciones. La Sección 1 trata sobre algo, la Sección 2 trata sobre algo más y así sucesivamente.
+
+\section{Arquitectura}
+	\subsection{Cliente - Servidor}
+	Como fue orientado en el proyecto,\emph{EBM} consta de dos componentes, una biblioteca \emph{ebmc} como cliente y una aplicación servidor.
+	
+	El flujo es el siguiente: Una aplicación cliente, digamos \emph{sender-app} (La aplicación que proponemos como prueba de concepto), importa \emph{ebmc} y a través de dicha biblioteca, luego de proveer un cliente de correo válido y una dirección de correo de alguno de nuestros servidores, empieza a interactuar con nuestro sistema como si este fuera una entidad única.
+	
+	Esto facilita la abstracción de la aplicación cliente de la comunicación con otro servicio que use \emph{ebmc}, permitiendo al usuario a centrarse en la lógica de su programa.
+	
+	\subsection{Cliente}
+	En el archivo \bfseries{README.md} de nuestro proyecto se encuentran las instrucciones para instalar \emph{ebmc}, el cual expone la clase \emph{EBMC}.
+	
+	Los métodos \emph{register}, \emph{login}, aseguran que un usuario del middleware pueda acceder a sus datos usando cualquier correo, siempre que provea de su identificador correctamente. El método \emph{register} registra a un usuario que nunca se ha conectado, mientras que el método \emph{login} autentica al usuario en el sistema, devolviendole un \emph{token} para usar en cada interacción con el sistema, simulando la autenticación de las arquitecturas RESTful y por tanto, su seguridad. Vale notar que dicho \emph{token} es la misma llave que mantiene la información del usuario en el sistema (Una llave de \emph{chord}), lo que hace que el usuario tenga ubicuidad con respecto a su correo, si un usuario conoce su \emph{token} puede utilizar indistintamente cualquier correo válido.
+	
+	La clase \emph{EBMC} tiene además los métodos \emph{send} para comunicación entre pares, \emph{publish},  \emph{subscribe} y \emph{unsubscribe} para soportar \emph{PUB/SUB} y \emph{create_event} para crear "eventos" a los cuales los usuarios se pueden suscribir, los cuales no son más que mapeos entre usuarios y \emph{strings}.
+	
+	\subsection{Servidor}
+	Nuestro servidor es una aplicación inicializada por un \emph{script}, escrito en \emph{Python}, que expone mediante \emph{python-fire} la clase \emph{EBMS}. Dicha clase está asociada a un servidor de correo mediante una respectiva cuenta de correo y además esta asociada a una dirección de la capa de transporte, mediante la cual se comunica con demás instancias de dicha clase. Toda comunicación cliente-servidor ocurre mediante correos electrónicos.
+	
+	Para facilitar la puesta en producción de dicho servidor, hemos dockerizado completamente la aplicación y explicamos la manera de ejecutarla en el archivo \bfseries{README.md}.
+	
+	
+	\subsection{Chord}
+	Para lograr los requerimientos de tolerancia a fallas, hemos decidido usar el sistema basado en tablas de hash distribuidas \emph{chord}, asegurando además escalabilidad, eficiencia, balance de carga y disponibilidad en nuestro sistema.
+	
+	Cada instancia de la clase \emph{EBMS} es un nodo de \emph{chord} y por tanto tiene un identificador, el cual es generado (junto con todo el espacio de llaves de nuestro sistema) usando la función de hash \emph{SHA-1}, ya que por definición las direcciones de correo electrónico son únicas, dicho identificador también es único.
+	
+	Dicha clase es también la encargada de replicar la información basándose en la propuesta de los autores de \emph{chord}, manteniendo \emph{r} sucesores con réplicas de los pares llave/valor.
+
+\section{Comunicación}
+Al utilizar como transporte para comunicar dos aplicaciones correos y querer garantizar orden y confianza en la entrega de los mensajes, lo más lógico sería empezar comparándolo con la capa de transporte actual de las redes. Dicha comparación no es con \emph{UDP}, puesto que no cumple nuestros requisitos.
+
+	\subsection{Transporte}
+	Un \emph{socket} define una abstracción a nivel de aplicación para recibir y enviar mensajes, a traves de un \emph{socket} podemos enviar cualquier cantidad de información que mientras sea soportado se enviará y recibirá con seguridad, al usar el protocolo \emph{TCP}, a pesar de estar sobre un medio de transporte no confiable, como lo son las capas bajas de las redes.
+	
+	Nosotro debemos garantizar lo mismo, pero ahora nuestro medio de transporte no confiable son los correos electrónicos. Como tal, los correos definen una interfaz equivalente a un \emph{socket} \emph{UDP}, por tanto, nos centramos en tratar de convertir dicho \emph{socket} en uno \emph{TCP}.
+	
+	\subsection{Bloques y Mensajes}
+	Nuestra aplicación convierte la información que se desea enviar en instancias de la clase \emph{Message}.
+	Es decir, a la hora de enviar un mensaje, cualquiera que este sea, lo convertimos en una instancia de \emph{Message}, asignándole un identificador que refleja su orden. 
+
+
+\end{document}
