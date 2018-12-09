@@ -55,142 +55,44 @@ En dicho documento explicamos la parte teórica del funcionamiento del proyecto.
 Este artículo esta dividido en X secciones. La Sección 1 trata sobre algo, la Sección 2 trata sobre algo más y así sucesivamente.
 
 \section{Arquitectura}
+	\subsection{Cliente - Servidor}
+	Como fue orientado en el proyecto,\emph{EBM} consta de dos componentes, una biblioteca \emph{ebmc} como cliente y una aplicación servidor.
+	
+	El flujo es el siguiente: Una aplicación cliente, digamos \emph{sender-app} (La aplicación que proponemos como prueba de concepto), importa \emph{ebmc} y a través de dicha biblioteca, luego de proveer un cliente de correo válido y una dirección de correo de alguno de nuestros servidores, empieza a interactuar con nuestro sistema como si este fuera una entidad única.
+	
+	Esto facilita la abstracción de la aplicación cliente de la comunicación con otro servicio que use \emph{ebmc}, permitiendo al usuario a centrarse en la lógica de su programa.
+	
+	\subsection{Cliente}
+	En el archivo \bfseries{README.md} de nuestro proyecto se encuentran las instrucciones para instalar \emph{ebmc}, el cual expone la clase \emph{EBMC}.
+	
+	Los métodos \emph{register}, \emph{login}, aseguran que un usuario del middleware pueda acceder a sus datos usando cualquier correo, siempre que provea de su identificador correctamente. El método \emph{register} registra a un usuario que nunca se ha conectado, mientras que el método \emph{login} autentica al usuario en el sistema, devolviendole un \emph{token} para usar en cada interacción con el sistema, simulando la autenticación de las arquitecturas RESTful y por tanto, su seguridad. Vale notar que dicho \emph{token} es la misma llave que mantiene la información del usuario en el sistema (Una llave de \emph{chord}), lo que hace que el usuario tenga ubicuidad con respecto a su correo, si un usuario conoce su \emph{token} puede utilizar indistintamente cualquier correo válido.
+	
+	La clase \emph{EBMC} tiene además los métodos \emph{send} para comunicación entre pares, \emph{publish},  \emph{subscribe} y \emph{unsubscribe} para soportar \emph{PUB/SUB} y \emph{create_event} para crear "eventos" a los cuales los usuarios se pueden suscribir, los cuales no son más que mapeos entre usuarios y \emph{strings}.
+	
+	\subsection{Servidor}
+	Nuestro servidor es una aplicación inicializada por un \emph{script}, escrito en \emph{Python}, que expone mediante \emph{python-fire} la clase \emph{EBMS}. Dicha clase está asociada a un servidor de correo mediante una respectiva cuenta de correo y además esta asociada a una dirección de la capa de transporte, mediante la cual se comunica con demás instancias de dicha clase. Toda comunicación cliente-servidor ocurre mediante correos electrónicos.
+	
+	Para facilitar la puesta en producción de dicho servidor, hemos dockerizado completamente la aplicación y explicamos la manera de ejecutarla en el archivo \bfseries{README.md}.
+	
+	
+	\subsection{Chord}
+	Para lograr los requerimientos de tolerancia a fallas, hemos decidido usar el sistema basado en tablas de hash distribuidas \emph{chord}, asegurando además escalabilidad, eficiencia, balance de carga y disponibilidad en nuestro sistema.
+	
+	Cada instancia de la clase \emph{EBMS} es un nodo de \emph{chord} y por tanto tiene un identificador, el cual es generado (junto con todo el espacio de llaves de nuestro sistema) usando la función de hash \emph{SHA-1}, ya que por definición las direcciones de correo electrónico son únicas, dicho identificador también es único.
+	
+	Dicha clase es también la encargada de replicar la información basándose en la propuesta de los autores de \emph{chord}, manteniendo \emph{r} sucesores con réplicas de los pares llave/valor.
 
-\subsection{¿Cómo incluir figuras?}
+\section{Comunicación}
+Al utilizar como transporte para comunicar dos aplicaciones correos y querer garantizar orden y confianza en la entrega de los mensajes, lo más lógico sería empezar comparándolo con la capa de transporte actual de las redes. Dicha comparación no es con \emph{UDP}, puesto que no cumple nuestros requisitos.
 
-Primero tienes que cargar el archivo de imagen desde su computadora usando el enlace de carga del menú del proyecto. Luego usando el comando 'includegraphics' podrás incluirlo en el documento. Con el entorno de figura y el comando de título podrás agregar un número y un título a la figura. Mira el código de la Figura \ref{fig:tesla} en esta sección para ver un ejemplo.
+	\subsection{Transporte}
+	Un \emph{socket} define una abstracción a nivel de aplicación para recibir y enviar mensajes, a traves de un \emph{socket} podemos enviar cualquier cantidad de información que mientras sea soportado se enviará y recibirá con seguridad, al usar el protocolo \emph{TCP}, a pesar de estar sobre un medio de transporte no confiable, como lo son las capas bajas de las redes.
+	
+	Nosotro debemos garantizar lo mismo, pero ahora nuestro medio de transporte no confiable son los correos electrónicos. Como tal, los correos definen una interfaz equivalente a un \emph{socket} \emph{UDP}, por tanto, nos centramos en tratar de convertir dicho \emph{socket} en uno \emph{TCP}.
+	
+	\subsection{Bloques y Mensajes}
+	Nuestra aplicación convierte la información que se desea enviar en instancias de la clase \emph{Message}.
+	Es decir, a la hora de enviar un mensaje, cualquiera que este sea, lo convertimos en una instancia de \emph{Message}, asignándole un identificador que refleja su orden. 
 
-\begin{figure}
-\centering
-\includegraphics[width=0.5\textwidth]{tesla.jpg}
-\caption{\label{fig:tesla}Esta imagen se añadió en el menú Project.}
-\end{figure}
-
-
-\subsection{¿Cómo añadir comentarios?}
-% * <stephmigoni@gmail.com> 2018-02-08T19:23:33.559Z:
-% 
-% Esto es un comentario de prueba
-% 
-% 
-
-Puedes añadir comentarios en el ícono + del menú de arriba.
-
-Para responder a un comentario, simplemente da click en Reply en Rich Text.
-
-También pueden añadirse comentarios en el margen del pdf compilado con el comando todo \todo{¡Comment en el margen!}, como se muestra en el ejemplo de la derecha. También puedes añadirlos dentro del texto:
-
-\todo[inline, color=green!40]{Este es un comentario dentro del texto.}
-
-\subsection{¿Cómo añadir tablas en mi \TeX?}
-
-Usa los comandos table y tabular para iniciar una tabla simple --- mira la tabla~\ref{tab:tabla ejemplo}, como ejemplo. 
-
-\begin{table}
-\centering
-\begin{tabular}{l c r} 
-%nùmero de columnas: 3
-l para left & c para centro & r para derecha \\ \hline
-Ejemplo & Centrado & Alineado a la\\
-Izquierda & 13 & Derecha
-\end{tabular}
-\caption{\label{tab:tabla ejemplo}Una simple tabla.}
-\end{table}
-
-\subsection{¿Cómo escribir (expresiones) Matemáticas?}
-
-\LaTeX{} es buenísimo para escribir ecuaciones. Para escribir variables o ecuaciones dentro del texto lo podemos poner entre signos de pesos y luego podemos seguir escribiendo, esto funciona si queremos escribir un símbolo como $\nabla$, $\pi$, $\beta$, $\Omega$, $\aleph$, etc.
-\begin{equation}
-\sum_{n=0}^\infty \frac{x^n}{n!}=e^x
-\end{equation}
-\begin{equation}
-\int_{0}^{1}dx=1
-\end{equation}
-\begin{equation}
-e^{i\pi}+1=0
-\end{equation}
-Si queremos citar al gran Maxwell, lo podemos hacer como en la ecuación \ref{eq:Maxwell}:
-\begin{equation}
-\nabla\times\mathbf{E}+\frac{\partial\mathbf{B}}{\partial t}=0\label{eq:Maxwell}
-\end{equation}
-
-A continuación se añade un ejemplo de un desarrollo:
-Con este preámbulo llevamos a cabo la siguiente transformación de los operadores $\hat{a}_{\ell}$
-
-\begin{equation}
-\hat{b}_{m}^{\dagger}=\sum_{\ell}U_{m}^{\ell}\hat{a}_{\ell}^{\dagger}
-\end{equation}
-
-donde $U_{m}^{\ell}$ es un elemento de la matriz unitaria $\mathbf{U}$.
-
-Calculamos ahora su hermitiano conjugado
-\begin{align}
-\hat{b}_{m} & =\left(\sum_{\ell}U_{m}^{\ell}\hat{a}_{\ell}^{\dagger}\right)^{\dagger}\label{eq:bm}\\
- & =\sum_{\ell}\left(U_{m}^{\ell}\hat{a}_{\ell}^{\dagger}\right)^{\dagger}\nonumber \\
- & =\sum_{\ell}\left(U_{m}^{\ell}\right)^{*}\hat{a}_{\ell}\nonumber \\
- & =\sum_{\ell}\left(U^{-1}\right)_{\ell}^{m}\hat{a}_{\ell},\label{eq:bSubM}
-\end{align}
-
-Ahora, para añadir una matriz:
-
-$$
-\begin{matrix} 
-a & b \\
-c & d 
-\end{matrix}
-\quad
-\begin{pmatrix} 
-a & b \\
-c & d 
-\end{pmatrix}
-\quad
-\begin{bmatrix} 
-a & b \\
-c & d 
-\end{bmatrix}
-\quad
-\begin{vmatrix} 
-a & b \\
-c & d 
-\end{vmatrix}
-\quad
-\begin{Vmatrix} 
-a & b \\
-c & d 
-\end{Vmatrix}
-$$
-%% Por ejemplo, el triple producto escalar:
-\begin{equation}
-\vec{A}\cdot(\vec{B}\times\vec{C})=\begin{vmatrix}
-A_x&A_y&A_z\\
-B_x&B_y&B_z\\
-C_x&C_y&C_z\\
-\end{vmatrix}
-\end{equation}
-
-\subsection{¿Cómo añadir listas?}
-
-Puedes añadir listas con numeración automática \dots
-
-\begin{enumerate}
-\item Como esta,
-\item y como esta.
-\end{enumerate}
-\dots o con puntitos \dots
-\begin{itemize}
-\item Como este,
-\item y como este.
-\end{itemize}
-
-\subsection{¿Cómo añado una lista de Citas y Referencias?}
-
-Puedes subir un archivo \verb|.bib| que contenga todas tus referencias en estilo BibTeX (puedes buscar la bibliografía de un libro en google añadiendo 'bibtex' al final), creado con JabRef. Luego podrás hacer citas así: \cite{Griffiths:1492149}.
-
-Puedes encontrar un \href{https://www.overleaf.com/help/97-how-to-include-a-bibliography-using-bibtex}{video tutorial aquí} para aprender más acerca de BibTeX.
-
-Espero que esta charla haya sido de tu ayuda. Puedes acceder a Overleaf en el siguiente link: \url{https://www.overleaf.com/}!
-
-\bibliographystyle{abbrv}
-\bibliography{sample}
 
 \end{document}
