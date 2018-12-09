@@ -30,7 +30,6 @@ class EBMC:
 
         self.mta: Broker = Broker(email_server, self.user_info)
 
-        self.user = ''
         self.token = ''
 
         # TODO: This needs tuning, i realized we aren't seeing the addresses correctly
@@ -77,7 +76,7 @@ class EBMC:
         :param data: data
         :param name: name of package
         """
-        msg = self.mta.build_message(body=f'{user}', protocol=PROTOCOLS['CONFIG'], topic=TOPICS['CMD'])
+        msg = self.mta.build_message(body=f'{user}', protocol=PROTOCOLS['CONFIG'], topic=TOPICS['CMD'], user=self.user_info.active_email, token=self.token)
         msg.send(self.mta, self.server_email_addr, self.user_info)
         item = None
         while not item:
@@ -86,7 +85,7 @@ class EBMC:
                 email = item.text
                 self.mta.config_queue.remove(item)
                 msg_data = self.mta.build_message(body=data, protocol=PROTOCOLS['DATA'], topic=TOPICS['ANSWER'],
-                                                  name=name, user=self.user, token=self.token)
+                                                  name=name, user=self.user_info.active_email, token=self.token)
                 msg_data.send(self.mta, email)
                 break
             time.sleep(1)
@@ -98,7 +97,7 @@ class EBMC:
         :param data: data to publish
         :param name: name of package
         """
-        msg = self.mta.build_message(body=event, protocol=PROTOCOLS['CONFIG'], topic=TOPICS['PUBLICATION'])
+        msg = self.mta.build_message(body=event, protocol=PROTOCOLS['CONFIG'], topic=TOPICS['PUBLICATION'], user=self.user_info.active_email, token=self.token)
         msg.send(self.mta, self.server_email_addr, self.user_info)
         item = None
         while not item:
@@ -107,7 +106,7 @@ class EBMC:
                 emails = item.text.split(';')
                 self.mta.config_queue.remove(item)
                 msg_data = self.mta.build_message(body=data, protocol=PROTOCOLS['DATA'], topic=TOPICS['PUBLICATION'],
-                                                  name=name, user=self.user, token=self.token)
+                                                  name=name, user=self.user_info.active_email, token=self.token)
                 for email in emails:
                     msg_data.send(self.mta, email)
                 break
@@ -115,22 +114,22 @@ class EBMC:
 
     @thread
     def create_event(self, name: str):
-        msg = self.mta.build_message(body=name, protocol=PROTOCOLS['CONFIG'], topic=TOPICS['CREATE'], token=self.token)
+        msg = self.mta.build_message(body=name, protocol=PROTOCOLS['CONFIG'], topic=TOPICS['CREATE'], user=self.user_info.active_email, token=self.token)
         msg.send(self.mta, self.server_email_addr, self.user_info)
 
     @thread
     def subscribe(self, event: str):
-        msg = self.mta.build_message(body=event, protocol=PROTOCOLS['CONFIG'], topic=TOPICS['SUBSCRIPTION'], token=self.token)
+        msg = self.mta.build_message(body=event, protocol=PROTOCOLS['CONFIG'], topic=TOPICS['SUBSCRIPTION'], user=self.user_info.active_email, token=self.token)
         msg.send(self.mta, self.server_email_addr, self.user_info)
 
 
     @thread
     def unsubscribe(self, event: str):
-        msg = self.mta.build_message(body=event, protocol=PROTOCOLS['CONFIG'], topic=TOPICS['UNSUBSCRIPTION'], token=self.token)
+        msg = self.mta.build_message(body=event, protocol=PROTOCOLS['CONFIG'], topic=TOPICS['UNSUBSCRIPTION'], user=self.user_info.active_email, token=self.token)
         msg.send(self.mta, self.server_email_addr, self.user_info)
 
     @property
-    def received(self) -> tuple:
+    def recived(self) -> tuple:
         """
         :return: list: (id_message, name_location)
         """

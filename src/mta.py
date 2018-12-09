@@ -149,7 +149,7 @@ class Broker:
         """
         items.sort(key=lambda x: x.index)
         # TODO: poner la propiedad name a block
-        f = open(f'{os.path.join(config.UPLOAD_FOLDER,items[0].name)}', "w+")
+        f = open(f'{os.path.join(config.UPLOAD_FOLDER,items[0].subject["name"])}', "w+")
 
         b = None
         for block in items:
@@ -206,8 +206,8 @@ class Broker:
             for uid, message in imbox.messages(unread=True):
                 unread.append(message)  # For now just append to the queue
                 # TODO: uncomment
-                # imbox.delete(uid)
-                imbox.mark_seen(uid)
+                imbox.delete(uid)
+                # imbox.mark_seen(uid)
 
         return unread
 
