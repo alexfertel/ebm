@@ -16,6 +16,7 @@ from ebmc.core.decorators import thread, retry
 from ebmc.core.message import Message
 from email.message import EmailMessage
 from imbox import Imbox
+from config import RECEIVED_FOLDER
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('SERVER')
@@ -148,7 +149,7 @@ class Broker:
         """
         items.sort(key=lambda x: x.index)
         # TODO: poner la propiedad name a block
-        f = open(f'{os.path.join(config.UPLOAD_FOLDER,items[0].name)}', "w+")
+        f = open(f'{os.path.join(RECEIVED_FOLDER,items[0]["name"])}', "w+")
 
         b = None
         for block in items:

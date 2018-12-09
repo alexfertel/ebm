@@ -11,7 +11,6 @@ from .user import User
 import logging
 
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('CLIENT')
 
 
@@ -31,8 +30,6 @@ class EBMC:
         self.mta: Broker = Broker(email_server, self.user_info)
 
         self.token = ''
-
-        # TODO: This needs tuning, i realized we aren't seeing the addresses correctly
 
     # returns an ID
     @thread
@@ -129,7 +126,7 @@ class EBMC:
         msg.send(self.mta, self.server_email_addr, self.user_info)
 
     @property
-    def recived(self) -> tuple:
+    def received(self) -> tuple:
         """
         :return: list: (id_message, name_location)
         """

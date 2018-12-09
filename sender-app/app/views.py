@@ -1,6 +1,6 @@
 from flask import render_template, Blueprint, request, redirect
 from werkzeug.utils import secure_filename
-from config import UPLOAD_FOLDER, TOKEN, RECIVED_FOLDER
+from config import UPLOAD_FOLDER, TOKEN, RECEIVED_FOLDER
 from . import utils
 import os
 import time
@@ -103,11 +103,11 @@ def settings():
 
 
 def get_files():
-    files = os.listdir(RECIVED_FOLDER)
+    files = os.listdir(RECEIVED_FOLDER)
     file_info = [
         (file,
-         date.fromtimestamp(os.path.getmtime(os.path.join(RECIVED_FOLDER, file))),
-         os.path.getsize(os.path.join(RECIVED_FOLDER, file)) / 1000000.0
+         date.fromtimestamp(os.path.getmtime(os.path.join(RECEIVED_FOLDER, file))),
+         os.path.getsize(os.path.join(RECEIVED_FOLDER, file)) / 1000000.0
          ) for file in files
     ]
     return file_info

@@ -1,14 +1,14 @@
-from config import RECIVED_FOLDER
+from config import RECEIVED_FOLDER
 from datetime import date
 import os
 
 
 def get_files():
-    files = os.listdir(RECIVED_FOLDER)
+    files = os.listdir(RECEIVED_FOLDER)
     file_info = [
         (file,
-         date.fromtimestamp(os.path.getmtime(os.path.join(RECIVED_FOLDER, file))),
-         os.path.getsize(os.path.join(RECIVED_FOLDER, file)) / 1000000.0
+         date.fromtimestamp(os.path.getmtime(os.path.join(RECEIVED_FOLDER, file))),
+         os.path.getsize(os.path.join(RECEIVED_FOLDER, file)) / 1000000.0
          ) for file in files
     ]
     return file_info

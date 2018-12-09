@@ -17,8 +17,8 @@ from decorators import *
 from imbox import Imbox
 from email.message import EmailMessage
 from message import Message
+from config import RECEIVED_FOLDER
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('SERVER')
 
 
@@ -149,7 +149,7 @@ class Broker:
         """
         items.sort(key=lambda x: x.index)
         # TODO: poner la propiedad name a block
-        f = open(f'{os.path.join(config.UPLOAD_FOLDER,items[0].subject["name"])}', "w+")
+        f = open(f'{os.path.join(RECEIVED_FOLDER,items[0]["name"])}', "w+")
 
         b = None
         for block in items:
