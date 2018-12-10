@@ -51,8 +51,8 @@ $ cd ebm/src
 $ ./server.py --server-email-addr="ebms@estudiantes.matcom.uh.cu" \
             --pwd="password" \
             --email-server="correo.estudiantes.matcom.uh.cu" \
-			--ip-addr="('10.6.98.203', 18861)" \
-			--join-addr="('10.6.98.3', 18861)"
+            --ip-addr="('10.6.98.203', 18861)" \
+            --join-addr="('10.6.98.3', 18861)"
 ```
 
 This will start a new server joining our distributed [chord](https://en.wikipedia.org/wiki/Chord_(peer-to-peer)) system in the address `--join-addr="('10.6.98.3', 18861)"`, in case of not setting the `--join-addr` argument the server assumes it itself is the first **chord** node.
@@ -66,7 +66,7 @@ This will start a new server joining our distributed [chord](https://en.wikipedi
 With a shell prompt in our project's root path, we simply run:
 
 ```bash
-$ sudo docker build -t . ebms:latest
+$ sudo docker build -t ebms:latest .
 ```
 
 Thus, building our image requirements as shown inside our [Dockerfile](https://github.com/white41/ebm/blob/master/Dockerfile). Afterwards, let's start our container with any given port binding (which we'll have to remember).
@@ -105,8 +105,18 @@ ebm.send('another_user', 'data to send', 'name of the package')
 
 ### Sender-app
 
-We provide a flask application for testing purposes which basically just send files between clients. It is also fully dockerized, just need to run
+We provide a flask application for testing purposes which basically just send files between clients. It is also fully dockerized, just need to run from the `sender-app` folder:
 
+```bash
+$ sudo cd sender-app
+$ sudo docker build -t sender-app:latest .
+```
+
+And then, just run the new container with:
+
+```bash
+$ docker run -d -p 5000:5000 sender-app:latest
+```
 
 ## Authors
 
