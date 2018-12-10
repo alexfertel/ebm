@@ -1,43 +1,25 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-% Plantilla para un artículo en LaTeX en español.
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% Qué tipo de documento estamos por comenzar:
 \documentclass[a4paper]{article}
-% Esto es para que el LaTeX sepa que el texto está en español:
 \usepackage[spanish]{babel}
 \selectlanguage{spanish}
-% Esto es para poder escribir acentos directamente:
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
-
-
-
-%% Asigna un tamaño a la hoja y los márgenes
 \usepackage[a4paper,top=3cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
 
-%% Paquetes de la AMS
 \usepackage{amsmath, amsthm, amsfonts}
-%% Para añadir archivos con extensión pdf, jpg, png or tif
 \usepackage{graphicx}
 \usepackage[colorinlistoftodos]{todonotes}
 \usepackage[colorlinks=true, allcolors=blue]{hyperref}
 
-%% Primero escribimos el título
-\title{Email Based Middleware \LaTeX}
-\author{Alexander A. González Fertel, Sandor Martín \\
+\title{Email Based Middleware}
+\author{Alexander A. González Fertel, Sandor Martín Leyva\\
   \small Universidad de la Habana\\
   \small Facultad de Matemática y Computación\\
   \small alexfertel97@gmail.com, s.martin@estudiantes.matcom.uh.cu
   \date{}
 }
 
-%% Después del "preámbulo", podemos empezar el documento
 
 \begin{document}
-%% Hay que decirle que incluya el título en el documento
 \maketitle
 
 \begin{abstract}
@@ -47,72 +29,93 @@ En dicho documento explicamos la parte teórica del funcionamiento del proyecto.
 
 \end{abstract}
 
-\section{Arquitectura}
-	\subsection{Cliente - Servidor}
-	Como fue orientado en el proyecto,\emph{EBM} consta de dos componentes, una biblioteca \emph{ebmc} como cliente y una aplicación servidor.
+\section{Arquitectura}\label{sec:arquitectura}
+	\subsection{Cliente - Servidor}\label{subsec:cliente---servidor}
+	Como fue orientado en el proyecto, \emph{EBM} consta de dos componentes, una biblioteca \emph{ebmc} como cliente y una aplicación servidor.
 	
 	El flujo es el siguiente: Una aplicación cliente, digamos \emph{sender-app} (La aplicación que proponemos como prueba de concepto), importa \emph{ebmc} y a través de dicha biblioteca, luego de proveer un cliente de correo válido y una dirección de correo de alguno de nuestros servidores, empieza a interactuar con nuestro sistema como si este fuera una entidad única.
 	
 	Esto facilita la abstracción de la aplicación cliente de la comunicación con otro servicio que use \emph{ebmc}, permitiendo al usuario a centrarse en la lógica de su programa.
 	
-	\subsection{Cliente}
-	En el archivo \bfseries{README.md} de nuestro proyecto se encuentran las instrucciones para instalar \emph{ebmc}, el cual expone la clase \emph{EBMC}.
+	\subsection{Cliente}\label{subsec:cliente}
+	En el archivo \emph{README.md} de nuestro proyecto se encuentran las instrucciones para instalar \emph{ebmc}, el cual expone la clase \emph{EBMC}.
 	
-	Los métodos \emph{register}, \emph{login}, aseguran que un usuario del middleware pueda acceder a sus datos usando cualquier correo, siempre que provea de su identificador correctamente. El método \emph{register} registra a un usuario que nunca se ha conectado, mientras que el método \emph{login} autentica al usuario en el sistema, devolviendole un \emph{token} para usar en cada interacción con el sistema, simulando la autenticación de las arquitecturas RESTful y por tanto, su seguridad. Vale notar que dicho \emph{token} es la misma llave que mantiene la información del usuario en el sistema (Una llave de \emph{chord}), lo que hace que el usuario tenga ubicuidad con respecto a su correo, si un usuario conoce su \emph{token} puede utilizar indistintamente cualquier correo válido.
+	Los métodos \emph{register}, \emph{login}, aseguran que un usuario del middleware pueda acceder a sus datos usando cualquier correo, siempre que provea de su identificador correctamente.
+	El método \emph{register} registra a un usuario que nunca se ha conectado, mientras que el método \emph{login} autentica al usuario en el sistema, devolviendole un \emph{token} para usar en cada interacción con el sistema, simulando la autenticación de las arquitecturas RESTful y por tanto, su seguridad.
+	Vale notar que dicho \emph{token} es la misma llave que mantiene la información del usuario en el sistema (Una llave de \emph{chord}), lo que hace que el usuario tenga ubicuidad con respecto a su correo, si un usuario conoce su \emph{token} puede utilizar indistintamente cualquier correo válido.
 	
-	La clase \emph{EBMC} tiene además los métodos \emph{send} para comunicación entre pares, \emph{publish},  \emph{subscribe} y \emph{unsubscribe} para soportar \emph{PUB/SUB} y \emph{create_event} para crear "eventos" a los cuales los usuarios se pueden suscribir, los cuales no son más que mapeos entre usuarios y \emph{strings}.
+	La clase \emph{EBMC} tiene además los métodos \emph{send} para comunicación entre pares, \emph{publish},  \emph{subscribe} y \emph{unsubscribe} para soportar \emph{PUB/SUB} y \emph{create event} para crear "eventos" a los cuales los usuarios se pueden suscribir, los cuales no son más que mapeos entre usuarios y \emph{strings}.
 	
-	\subsection{Servidor}
-	Nuestro servidor es una aplicación inicializada por un \emph{script}, escrito en \emph{Python}, que expone mediante \emph{python-fire} la clase \emph{EBMS}. Dicha clase está asociada a un servidor de correo mediante una respectiva cuenta de correo y además esta asociada a una dirección de la capa de transporte, mediante la cual se comunica con demás instancias de dicha clase. Toda comunicación cliente-servidor ocurre mediante correos electrónicos.
+	\subsection{Servidor}\label{subsec:servidor}
+	Nuestro servidor es una aplicación inicializada por un \emph{script}, escrito en \emph{Python}, que expone mediante \emph{python-fire} la clase \emph{EBMS}.
+	Dicha clase está asociada a un servidor de correo mediante una respectiva cuenta de correo y además esta asociada a una dirección de la capa de transporte, mediante la cual se comunica con demás instancias de dicha clase.
+	Toda comunicación cliente-servidor ocurre mediante correos electrónicos.
 	
-	Para facilitar la puesta en producción de dicho servidor, hemos dockerizado completamente la aplicación y explicamos la manera de ejecutarla en el archivo \bfseries{README.md}.
+	Para facilitar la puesta en producción de dicho servidor, hemos dockerizado completamente la aplicación y explicamos la manera de ejecutarla en el archivo \emph{README.md}.
 	
 	
-	\subsection{Chord}
+	\subsection{Chord}\label{subsec:chord}
 	Para lograr los requerimientos de tolerancia a fallas, hemos decidido usar el sistema basado en tablas de hash distribuidas \emph{chord}, asegurando además escalabilidad, eficiencia, balance de carga y disponibilidad en nuestro sistema.
 	
 	Cada instancia de la clase \emph{EBMS} es un nodo de \emph{chord} y por tanto tiene un identificador, el cual es generado (junto con todo el espacio de llaves de nuestro sistema) usando la función de hash \emph{SHA-1}, ya que por definición las direcciones de correo electrónico son únicas, dicho identificador también es único.
 	
 	Dicha clase es también la encargada de replicar la información basándose en la propuesta de los autores de \emph{chord}, manteniendo \emph{r} sucesores con réplicas de los pares llave/valor.
 
-\section{Comunicación}
-Al utilizar como transporte para comunicar dos aplicaciones correos y querer garantizar orden y confianza en la entrega de los mensajes, lo más lógico sería empezar comparándolo con la capa de transporte actual de las redes. Dicha comparación no es con \emph{UDP}, puesto que no cumple nuestros requisitos.
+\section{Comunicación}\label{sec:comunicación}
+Al utilizar como transporte para comunicar dos aplicaciones correos y querer garantizar orden y confianza en la entrega de los mensajes, lo más lógico sería empezar comparándolo con la capa de transporte actual de las redes.
+Dicha comparación no es con \emph{UDP}, puesto que no cumple nuestros requisitos.
 
-	\subsection{Transporte}
+	\subsection{Transporte}\label{subsec:transporte}
 	Un \emph{socket} define una abstracción a nivel de aplicación para recibir y enviar mensajes, a traves de un \emph{socket} podemos enviar cualquier cantidad de información que mientras sea soportado se enviará y recibirá con seguridad, al usar el protocolo \emph{TCP}, a pesar de estar sobre un medio de transporte no confiable, como lo son las capas bajas de las redes.
 	
-	Nosotro debemos garantizar lo mismo, pero ahora nuestro medio de transporte no confiable son los correos electrónicos. Como tal, los correos definen una interfaz equivalente a un \emph{socket} \emph{UDP}, por tanto, nos centramos en tratar de convertir dicho \emph{socket} en uno \emph{TCP}.
+	Nosotro debemos garantizar lo mismo, pero ahora nuestro medio de transporte no confiable son los correos electrónicos.
+	Como tal, los correos definen una interfaz equivalente a un \emph{socket} \emph{UDP}, por tanto, nos centramos en tratar de convertir dicho \emph{socket} en uno \emph{TCP}.
 	
-	\subsection{Bloques y Mensajes}
+	\subsection{Bloques y Mensajes}\label{subsec:bloques-y-mensajes}
 	Nuestra aplicación convierte la información que se desea enviar en instancias de la clase \emph{Message}.
-	Es decir, a la hora de enviar un mensaje, cualquiera que este sea, lo convertimos en una instancia de \emph{Message}, asignándole un identificador que refleja su orden (tiempo actual). Además, mantenemos una cola de mensajes en cada parte de la comunicación tal que antes de enviar y al recibir ordenamos los mensajes. Esto garantiza el correcto orden de los mensajes si asumimos que todos llegan al destinatario, lo cual sabemos que es improbable, sino imposible. El protocolo \emph{SMTP} no garantiza confiabilidad a la hora de entregar los correos, lo cual quisimos arreglar justo como \emph{TCP}, manteniendo una ventana (window) y respondiendo a los mensajes con \emph{acknowledgements} o \emph{ACKs}, pero no pudimos.
+	Es decir, a la hora de enviar un mensaje, cualquiera que este sea, lo convertimos en una instancia de \emph{Message}, asignándole un identificador que refleja su orden (tiempo actual).
+	Además, mantenemos una cola de mensajes en cada parte de la comunicación tal que antes de enviar y al recibir ordenamos los mensajes.
+	Esto garantiza el correcto orden de los mensajes si asumimos que todos llegan al destinatario, lo cual sabemos que es improbable, sino imposible.
+	El protocolo \emph{SMTP} no garantiza confiabilidad a la hora de entregar los correos, lo cual quisimos arreglar justo como \emph{TCP}, manteniendo una ventana (window) y respondiendo a los mensajes con \emph{acknowledgements} o \emph{ACKs}, pero no pudimos.
 	
-	Nos enfrentamos a otro problema, los correos tienen un tamaño limitado, por lo cual, si nuestro mensaje tiene longitud mayor a la soportada por el servidor de correo, no podemos enviarlo. Como solución definimos una nueva clase \emph{Block} de forma tal que todo \emph{Message} esta formado por una lista de bloques, y en realidad son los bloques (al heredar de \emph{email.message.EmailMessage}) los verdaderos correos electrónicos que envía nuestro middleware.
+	Nos enfrentamos a otro problema, los correos tienen un tamaño limitado, por lo cual, si nuestro mensaje tiene longitud mayor a la soportada por el servidor de correo, no podemos enviarlo.
+	Como solución definimos una nueva clase \emph{Block} de forma tal que todo \emph{Message} esta formado por una lista de bloques, y en realidad son los bloques (al heredar de \emph{email.message.EmailMessage}) los verdaderos correos electrónicos que envía nuestro middleware.
 	
-	\subsection{Broker}
+	\subsection{Broker}\label{subsec:broker}
 	En la literatura (y en economía), un \emph{broker} es una entidad que arregla transacciones entre 2 o más partes, nosotros definimos la clase \emph{Broker} que se encarga del manejo de todo el trabajo con los mensajes, bloques y correos electrónicos y de la cual tanto \emph{EBMC} como \emph{EBMS} mantienen una instancia asociada.
 	
 	Dicha clase mantiene un hilo leyendo del servidor de correo a través del protocolo \emph{IMAP}, mantiene otro hilo procesando 2 colas, una de configuración y otra de datos y además procesa todos los bloques y los empareja con sus respectivas instancias de \emph{Message} traduciendo de correo electrónico a \emph{Block}.
 	
-\section{Estructura}
+\section{Estructura}\label{sec:estructura}
 Hablemos un poco de la estructura de nuestros servidores y los protocolos que definimos.
 
-	\subsection{Asunto}
-	Si un usuario desea utilizar nuestro middleware, primero debe registrarse e iniciar sesión en nuestra aplicación, para luego realizar cualquier acción que oferta el middleware. Notemos que los mensajes de registro solo interactúan con el servidor asociado a dicho cliente y luego de ser procesados el servidor interactúa con el sistema, esta acción es diferente a, por ejemplo, hacer una publicación, que requiere resolver los ususarios suscritos al que publica y luego enrutar correos a cada uno de los suscriptores.
+	\subsection{Asunto}\label{subsec:asunto}
+	Si un usuario desea utilizar nuestro middleware, primero debe registrarse e iniciar sesión en nuestra aplicación, para luego realizar cualquier acción que oferta el middleware.
+	Notemos que los mensajes de registro solo interactúan con el servidor asociado a dicho cliente y luego de ser procesados el servidor interactúa con el sistema, esta acción es diferente a, por ejemplo, hacer una publicación, que requiere resolver los ususarios suscritos al que publica y luego enrutar correos a cada uno de los suscriptores.
 	 
-	Por tanto se hace necesario definir protocolos para así multiplexar las acciones de nuestro servidor. Nuestra solución se basa en un formato bien conocido haciendo uso de los asuntos de los correos. Un \emph{subject} o asunto, es un diccionario que usando la biblioteca \emph{json} convertimos a texto y enviamos en cada asunto de cada bloque(correo), dicho asunto contiene "metadatos", sobre el bloque y resuelve el multiplexado de los mensajes.
+	Por tanto se hace necesario definir protocolos para así multiplexar las acciones de nuestro servidor.
+	Nuestra solución se basa en un formato bien conocido haciendo uso de los asuntos de los correos.
+	Un \emph{subject} o asunto, es un diccionario que usando la biblioteca \emph{json} convertimos a texto y enviamos en cada asunto de cada bloque(correo), dicho asunto contiene "metadatos", sobre el bloque y resuelve el multiplexado de los mensajes.
 	
-	Definimos dos tipos de mensajes y por tanto dos colas de mensajes, mensajes de configuración y mensajes de datos. Los mensajes de configuración cambian la información subyacente en \emph{Chord}, mientras que los mensajes de datos, envían información de un cliente a otro.
+	Definimos dos tipos de mensajes y por tanto dos colas de mensajes, mensajes de configuración y mensajes de datos.
+	Los mensajes de configuración cambian la información subyacente en \emph{Chord}, mientras que los mensajes de datos, envían información de un cliente a otro.
 	
 	 
-	\subsection{Enrutado}
-	Para enviar un mensaje, podemos pensar en cómo es mejor, desde el punto de vista de eficiencia, resolver el destinatario, que dado que un usuario no está identificado por una dirección de correo, es un problema, además, deseamos minimizar la cantidad de correos. Una solución sencilla e intuitiva a este problema, y es una de las razones por las que surge la necesidad de usar \emph{Chord} (o algún protocolo de almacenamiento de datos, consistente), es guardar un mapeo entre identificadores y la dirección de correo por la que responde el usuario actualmente. 
+	\subsection{Enrutado}\label{subsec:enrutado}
+	Para enviar un mensaje, podemos pensar en cómo es mejor, desde el punto de vista de eficiencia, resolver el destinatario, que dado que un usuario no está identificado por una dirección de correo, es un problema, además, deseamos minimizar la cantidad de correos.
+	Una solución sencilla e intuitiva a este problema, y es una de las razones por las que surge la necesidad de usar \emph{Chord} (o algún protocolo de almacenamiento de datos, consistente), es guardar un mapeo entre identificadores y la dirección de correo por la que responde el usuario actualmente.
 	
-	Esto garantiza que para enviar un mensaje solo se necesiten tres direcciones de correo, el usuario que desea enviar el mensaje, el servidor asociado al usuario y el destinatario, el cual es resuelto en $O(logN)$ gracias a \emph{Chord}. Se envían además solo tres mensajes (asumiendo que no se ha implementado la funcionalidad de los \emph{ACK}), un correo de configuración del \emph{ebmc} al servidor de correo asociado a dicho usuario, un correo de vuelta al usuario con el correo del destinatario resuelto y finalmente, un mensaje al destinatario, donde por mensajes decimos todos los bloques que sean necesarios para hacer llegar el contenido del mensaje al destinatario.
+	
+	Esto garantiza que para enviar un mensaje solo se necesiten tres direcciones de correo, el usuario que desea enviar el mensaje, el servidor asociado al usuario y el destinatario, el cual es resuelto en $O(logN)$ gracias a \emph{Chord}.
+	Se envían además solo tres mensajes (asumiendo que no se ha implementado la funcionalidad de los \emph{ACK}), un correo de configuración del \emph{ebmc} al servidor de correo asociado a dicho usuario, un correo de vuelta al usuario con el correo del destinatario resuelto y finalmente, un mensaje al destinatario, donde por mensajes decimos todos los bloques que sean necesarios para hacer llegar el contenido del mensaje al destinatario.
 	
 
-\section{Tecnologías}
-Para la implementación del proyecto se utilizó \emph{Python 3.6}. La biblioteca \emph{imbox} se utilizó para el manejo de las conexiónes a servidores \emph{IMAP}, esta biblioteca es muy simple de usar y facilita mucho el parseo de los correos electrónicos. Para la implementación de \emph{Chord}, utilizamos \emph{rpyc} \bfseries{Remote Python Call}, una biblioteca para el trabajo con objetos remotos (RPC). Usamos \emph{docker} para facilitar el desarrollo y puesta en producción de la aplicación y \emph{python-fire} para facilitar la inicialización del servidor desde una \emph{CLI}. Trabajamos con \emph{smtplib} para el envío de correos.
+\section{Tecnologías}\label{sec:tecnologías}
+Para la implementación del proyecto se utilizó \emph{Python 3.6}.
+La biblioteca \emph{imbox} se utilizó para el manejo de las conexiónes a servidores \emph{IMAP}, esta biblioteca es muy simple de usar y facilita mucho el parseo de los correos electrónicos.
+Para la implementación de \emph{Chord}, utilizamos \emph{rpyc} \emph{Remote Python Call}, una biblioteca para el trabajo con objetos remotos (RPC).
+Usamos \emph{docker} para facilitar el desarrollo y puesta en producción de la aplicación y \emph{python-fire} para facilitar la inicialización del servidor desde una \emph{CLI}.
+Trabajamos con \emph{smtplib} para el envío de correos.
 
 
 \end{document}

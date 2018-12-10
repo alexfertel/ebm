@@ -1,0 +1,13 @@
+\BOOKMARK [1][-]{section.1}{Arquitectura}{}% 1
+\BOOKMARK [2][-]{subsection.1.1}{Cliente - Servidor}{section.1}% 2
+\BOOKMARK [2][-]{subsection.1.2}{Cliente}{section.1}% 3
+\BOOKMARK [2][-]{subsection.1.3}{Servidor}{section.1}% 4
+\BOOKMARK [2][-]{subsection.1.4}{Chord}{section.1}% 5
+\BOOKMARK [1][-]{section.2}{Comunicaci\363n}{}% 6
+\BOOKMARK [2][-]{subsection.2.1}{Transporte}{section.2}% 7
+\BOOKMARK [2][-]{subsection.2.2}{Bloques y Mensajes}{section.2}% 8
+\BOOKMARK [2][-]{subsection.2.3}{Broker}{section.2}% 9
+\BOOKMARK [1][-]{section.3}{Estructura}{}% 10
+\BOOKMARK [2][-]{subsection.3.1}{Asunto}{section.3}% 11
+\BOOKMARK [2][-]{subsection.3.2}{Enrutado}{section.3}% 12
+\BOOKMARK [1][-]{section.4}{Tecnolog\355as}{}% 13
