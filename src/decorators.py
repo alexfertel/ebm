@@ -1,6 +1,7 @@
 import config
 import time
 import logging
+import pickle
 
 from threading import Thread
 
@@ -46,6 +47,7 @@ def retry_times(times):
 
             logger.error(f'Exceeded retry_times when calling: {f.__name__}({args}, {kwargs}).')
             return None
+
         return wrapper
 
     return decorator
@@ -60,3 +62,15 @@ def thread(f):
         th.start()
 
     return thread_decorator
+
+
+def required_auth(context):
+    def auth_function(f):
+        def auth_decorator(*args, **kwargs):
+            user_active = pickle.loads(context.exposed_get(int(kwargs['token'])))
+            if user_active is not None:
+                f(args, kwargs)
+
+        return auth_decorator
+
+    return auth_function
