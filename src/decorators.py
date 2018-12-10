@@ -64,13 +64,10 @@ def thread(f):
     return thread_decorator
 
 
-def required_auth(context):
-    def auth_function(f):
-        def auth_decorator(*args, **kwargs):
-            user_active = pickle.loads(context.exposed_get(int(kwargs['token'])))
-            if user_active is not None:
-                f(args, kwargs)
+def required_auth(f):
+    def auth_decorator(*args, **kwargs):
+        user_active = pickle.loads(args[0].exposed_get(int(kwargs['token'])))
+        if user_active is not None:
+            f(args, kwargs)
 
-        return auth_decorator
-
-    return auth_function
+    return auth_decorator

@@ -16,13 +16,13 @@ Our middleware has a client library and a server script, fully written in python
 First clone the project from [github](https://github.com/white41/ebm):
 
 ```bash
-git clone https://github.com/white41/ebm
+$ git clone https://github.com/white41/ebm
 ```
 
 Now install from source:
 
 ```bash
-cd ebm/ebmc && python3 setup.py install
+$ cd ebm/ebmc && python3 setup.py install
 ```
 
 ## Usage
@@ -47,8 +47,8 @@ First, we must install our server requirements:
 Then, enter our source directory **src** and run our `server.py` script with the appropriate arguments.
 
 ```bash
-cd ebm/src
-./server.py --server-email-addr="ebms@estudiantes.matcom.uh.cu" \
+$ cd ebm/src
+$ ./server.py --server-email-addr="ebms@estudiantes.matcom.uh.cu" \
             --pwd="password" \
             --email-server="correo.estudiantes.matcom.uh.cu" \
 			--ip-addr="('10.6.98.203', 18861)" \
@@ -66,14 +66,14 @@ This will start a new server joining our distributed [chord](https://en.wikipedi
 With a shell prompt in our project's root path, we simply run:
 
 ```bash
-sudo docker build -t . ebm:latest
+$ sudo docker build -t . ebms:latest
 ```
 
 Thus, building our image requirements as shown inside our [Dockerfile](https://github.com/white41/ebm/blob/master/Dockerfile). Afterwards, let's start our container with any given port binding (which we'll have to remember).
 
 ```bash
-sudo docker run -d -p PORT:PORT --name ebm ebm:latest python3.6 \
-                  /usr/ebm/src/server.py
+$ sudo docker run -d -p PORT:PORT --name ebms ebms:latest python3.6 \
+                  /usr/ebm/server.py
                   --server-email-addr="ebms@estudiantes.matcom.uh.cu" \
                   --pwd="password" \
                   --email-server="correo.estudiantes.matcom.uh.cu" \
@@ -86,7 +86,7 @@ Starting our server instance which is equivalent to the *Source* section instanc
 If we want to see what our server logs, we can run:
 
 ```bash
-sudo docker logs -f ebm
+$ sudo docker logs -f ebms
 ```
 
 This shows that putting our server in development is really straight-forward and that we can have potentially infinite ;) instances in the same host, in the same docker daemon or in as many hosts as we want, scaling horizontally with ease.
@@ -102,6 +102,12 @@ ebm.register('user','pwd')
 ebm.login('user','pwd')
 ebm.send('another_user', 'data to send', 'name of the package')
 ```
+
+### Sender-app
+
+We provide a flask application for testing purposes which basically just send files between clients. It is also fully dockerized, just need to run
+
+
 ## Authors
 
 * Alexander Gonzalez - **a.fertel@estudiantes.matcom.uh.cu**

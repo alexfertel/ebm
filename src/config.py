@@ -3,6 +3,7 @@ import os
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'src/uploads')
+RECEIVED_FOLDER = os.path.join(BASE_DIR, 'sender-app/static/received')
 
 
 MESSAGE_LENGTH = 1000000

@@ -383,7 +383,7 @@ class EBMS(rpyc.Service):
                 del self.replicas[key]
 
     # ####################################################### MQ #######################################################
-    @required_auth(self)
+    @required_auth
     def subscribe(self, subscriber: str, event: str, email_client: str, message_id: str, token: str):
         """
             This method represents a subscription.
@@ -415,7 +415,7 @@ class EBMS(rpyc.Service):
 
         # self.add(subscription_list_id, subscriber)
 
-    @required_auth(self)
+    @required_auth
     def unsubscribe(self, subscriber: str, event: str, email_client: str, message_id: str, token: str):
         """
         This method represents an unsubscription.
@@ -444,7 +444,7 @@ class EBMS(rpyc.Service):
         msg.send(self.mta, email_client, self.server_info)
 
     
-    @required_auth(self)
+    @required_auth
     def publish(self, user: str, event: str, email_client: str, message_id: str, token: str):
 
         subscription_list_id = hashing(event)
@@ -470,7 +470,7 @@ class EBMS(rpyc.Service):
         msg.send(self.mta, email_client, self.server_info)
     
     
-    @required_auth(self)
+    @required_auth
     def create_event(self, user: str, event: str, email_client: str, message_id: str, token: str):
         subscription_list_id = hashing(event)
         user_id = hashing(user)
@@ -493,7 +493,7 @@ class EBMS(rpyc.Service):
 
         msg.send(self.mta, email_client, self.server_info)
 
-    @required_auth(self)
+    @required_auth
     def send(self, user: str, email_client: str, message_id: str, token: str):
         user_id = hashing(user)
         # user_id = hashlib.sha1(user.encode()).hexdigest()
