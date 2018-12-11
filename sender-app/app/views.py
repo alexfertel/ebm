@@ -51,7 +51,7 @@ def login():
     start = time.time()
     while True:
         if ebmc.token:
-            TOKEN = token
+            TOKEN = ebmc.token
             return redirect('/')
         if time.time() - start > 40:
             break

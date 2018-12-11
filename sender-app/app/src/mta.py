@@ -8,7 +8,6 @@ import smtplib
 import ssl
 import time
 
-import config
 import logging
 
 from .block import Block
@@ -17,7 +16,8 @@ from .decorators import *
 from imbox import Imbox
 from email.message import EmailMessage
 from .message import Message
-from config import RECEIVED_FOLDER
+from config import *
+from .config import *
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('SERVER')
@@ -41,7 +41,7 @@ class Broker:
 
         self.fetch()  # Start a thread to fetch emails
 
-        # self.loop()  # Start a thread to process emails
+        self.loop()  # Start a thread to process emails
 
     def __str__(self):
         queue = '*' * 25 + ' Queue ' + '*' * 25 + '\n' + f'{self._config_queue}' + '\n'
@@ -63,7 +63,7 @@ class Broker:
 
         for block in blocks:
             logger.info(f'{block}')
-            if block.subject.get('protocol', None) == config.PROTOCOLS['CONFIG']:
+            if block.subject.get('protocol', None) == PROTOCOLS['CONFIG']:
                 self._config_queue.append(block)
             else:
                 self._data_queue.append(block)
@@ -154,7 +154,7 @@ class Broker:
 
         b = None
         for block in items:
-            b = open(f'{os.path.join(config.UPLOAD_FOLDER,block.id)}', 'r')
+            b = open(f'{os.path.join(UPLOAD_FOLDER,block.id)}', 'r')
             f.write(block.text)
 
         if b:
