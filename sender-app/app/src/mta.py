@@ -29,8 +29,6 @@ class Broker:
         """
         This class represents the message transfer agent type.
         """
-        super().__init__()
-
         self.addr = addr
         self.messages = {}  # blocks
         self._config_queue = []  # Block queue
