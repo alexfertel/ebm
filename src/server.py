@@ -32,14 +32,14 @@ class EBMS(rpyc.Service):
         self.active_users = []
 
         # Chord setup
-        self.__id = int(hashlib.sha1(str(server_email_addr).encode()).hexdigest(), 16)
+        self.__id = hashing(server_email_addr) if server_email_addr else hashing(''.join(random.choices(string.ascii_lowercase + string.digits, k=6)))
         # Compute  Table computable properties (start, interval).
 
         self.server_info = User(server_email_addr, pwd)
         # self.server_info = None  # Testing purposes
 
         # Setup broker
-        self.mta = Broker(email_server, self.server_info)
+        self.mta = Broker(email_server, self.server_info) if server_email_addr else None
         # self.mta = None  # Testing purposes
 
         # The  property is computed when a joins or leaves and at the chord start
@@ -218,8 +218,9 @@ class EBMS(rpyc.Service):
         logger.info(f'Start checking ownership of data')
         self.check_ownership()
 
-        logger.info(f'Start multiplexing in: {self.exposed_identifier()}')
-        self.multiplexer()
+        if self.mta:
+            logger.info(f'Start multiplexing in: {self.exposed_identifier()}')
+            self.multiplexer()
 
     # periodically verify n's immediate succesor,
     # and tell the exposed_successor about n.
@@ -597,9 +598,9 @@ def main(server_email_addr: str = ''.join(random.choices(string.ascii_lowercase 
     t.start()
 
 
-def deploy(server_email_addr: str,
-           pwd: str,
-           email_server: str,
+def deploy(server_email_addr: str = None,
+           pwd: str = None,
+           email_server: str = None,
            join_addr: tuple = None,
            ip_addr: tuple = None):
     """
