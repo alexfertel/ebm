@@ -46,7 +46,7 @@ def upload_file():
 
         file_location = os.path.join(UPLOAD_FOLDER, filename)
         file.save(file_location)
-
+        
         send_file(file_location, request.form['target'], request.form['radio'])
 
         return redirect('/')
@@ -125,13 +125,13 @@ def send_file(file_location, target, type):
         size = os.path.getsize(file_location)
 
         # TODO: cambia 1000 por el tamanno maximo permitido
-        for target in range(int(size / 1000)):
+        for _ in range(int(size / 1000)):
             # TODO: mandar correro con esta info
             # (self, user: str, data: str, name: str)
-            ebmc.send('sandor', file.read(1000), file.name)
+            ebmc.send(target, file.read(1000), file.name)
 
         if size % 1000:
-            ebmc.send('sandor', file.read(size % 1000), file.name)
+            ebmc.send(target, file.read(size % 1000), file.name)
 
         # mandar correro con esta info
     os.remove(file_location)
