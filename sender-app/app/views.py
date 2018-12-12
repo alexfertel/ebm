@@ -5,14 +5,22 @@ from . import utils
 import os
 import time
 from datetime import date
+
 from .src.client import EBMC
 
-
-ebmc = EBMC('s.martin@estudiantes.matcom.uh.cu', 'a.fertel@estudiantes.matcom.uh.cu', 'correo.estudiantes.matcom.uh.cu', '#1S1m0l5enet')
 
 # from src.client import EBMC
 
 view: Blueprint = Blueprint('views', __name__)
+
+ebmc = ''
+
+@view.route('/init')
+def init():
+    global ebmc
+    print('Creo ebmc en init')
+    ebmc = EBMC('s.martin@estudiantes.matcom.uh.cu', 'j.cruz@estudiantes.matcom.uh.cu', 'correo.estudiantes.matcom.uh.cu', '#1S1m0l5enet')
+    return redirect('/')
 
 
 @view.route('/', methods=['GET', 'POST'])

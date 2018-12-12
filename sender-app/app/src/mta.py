@@ -19,7 +19,6 @@ from .message import Message
 from config import *
 from .config import *
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('SERVER')
 
 
@@ -29,6 +28,8 @@ class Broker:
         """
         This class represents the message transfer agent type.
         """
+        super().__init__()
+
         self.addr = addr
         self.messages = {}  # blocks
         self._config_queue = []  # Block queue
@@ -63,6 +64,7 @@ class Broker:
             logger.info(f'{block}')
             if block.subject.get('protocol', None) == PROTOCOLS['CONFIG']:
                 self._config_queue.append(block)
+                print(f'id en MTA : {id(self._config_queue)}')
             else:
                 self._data_queue.append(block)
 
@@ -152,7 +154,7 @@ class Broker:
 
         b = None
         for block in items:
-            b = open(f'{os.path.join(UPLOAD_FOLDER,block.id)}', 'r')
+            b = open(f'{os.path.join(config.UPLOAD_FOLDER,block.id)}', 'r')
             f.write(block.text)
 
         if b:
@@ -205,8 +207,8 @@ class Broker:
             for uid, message in imbox.messages(unread=True):
                 unread.append(message)  # For now just append to the queue
                 # TODO: uncomment
-                imbox.delete(uid)
-                # imbox.mark_seen(uid)
+                #imbox.delete(uid)
+                imbox.mark_seen(uid)
 
         return unread
 

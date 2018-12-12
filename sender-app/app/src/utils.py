@@ -26,7 +26,13 @@ def inbetween(a, b, c):
 
 
 def in_queue(id: str, queue: list):
-    for item_id, item in queue:
-        if id == item_id:
+
+    for item in queue:
+        
+        print(f'buscando +++ {id in item.subject["block_id"]}')
+        print(f'buscando +++ {id}')
+        print(f'buscando +++ {item.subject["block_id"]}')
+       
+        if id in item.subject['block_id']:
             return item
     return None

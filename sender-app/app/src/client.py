@@ -28,6 +28,7 @@ class EBMC:
         self.user_info = User(client_email_addr, pwd)
 
         self.mta: Broker = Broker(email_server, self.user_info)
+        print('+++++++++INSTANCIA DE BROKER++++++++++++')
 
         self.token = ''
 
@@ -60,6 +61,7 @@ class EBMC:
 
         item = None
         while not item:
+            print(f'Id en cliente  {id(self.mta._config_queue)}')
             item = in_queue(msg.id, copy.deepcopy(self.mta.config_queue))
             if item is not None:
                 self.token = item.text
