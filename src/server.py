@@ -1,4 +1,6 @@
 #!/usr/bin/env python3.6
+import time
+
 import config
 import copy
 import fire
@@ -299,12 +301,16 @@ class EBMS(rpyc.Service):
         elif replica:
             return pickle.dumps(replica)
         else:
-            if inbetween(self.exposed_predecessor()[0] + 1, self.exposed_identifier(), key):
-                logger.info(f"This key {key} belongs to us, but we don't have it, thus chord doesn't have it")
-                return None
+            if self.exposed_predecessor() != 'unknown':
+                if inbetween(self.exposed_predecessor()[0] + 1, self.exposed_identifier(), key):
+                    logger.info(f"This key {key} belongs to us, but we don't have it, thus chord doesn't have it")
+                    return None
+                else:
+                    succ = self.exposed_find_successor(key)
+                    return self.remote_request(succ[1], 'get', key)
             else:
-                succ = self.exposed_find_successor(key)
-                return self.remote_request(succ[1], 'get', key)
+                time.sleep(1)
+                return self.exposed_get(key)
 
     # value param must be a 'pickled' object
     def exposed_set(self, key, value):
