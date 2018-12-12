@@ -565,21 +565,21 @@ class EBMS(rpyc.Service):
                 if block.subject['protocol'] == config.PROTOCOLS['CONFIG']:
                     if block.subject['topic'] == config.TOPICS['REGISTER']:
                         user_pass_email = block.text.split('\n')
-                        self.register(user_pass_email[0], user_pass_email[1], user_pass_email[2], block.id)
+                        self.register(user_pass_email[0], user_pass_email[1], user_pass_email[2], block.subject['message_id'])
                     elif block.subject['topic'] == config.TOPICS['LOGIN']:
                         user_pass = block.text.split('\n')
-                        self.login(user_pass[0], user_pass[1], block['From'], block.id)
+                        self.login(user_pass[0], user_pass[1], block['From'], block.subject['message_id'])
                     elif block.subject['topic'] == config.TOPICS['CMD']:
-                        self.send(block.text, block['From'], block.id, block.subject['token'])
+                        self.send(block.text, block['From'], block.subject['message_id'], block.subject['token'])
                     elif block.subject['topic'] == config.TOPICS['PUBLICATION']:
-                        self.publish(block.subject['user'], block.text, block['From'], block.id, block.subject['token'])
+                        self.publish(block.subject['user'], block.text, block['From'], block.subject['message_id'], block.subject['token'])
                     elif block.subject['topic'] == config.TOPICS['SUBSCRIPTION']:
-                        self.subscribe(block.subject['user'], block.text, block['From'], block.id, block.subject['token'])
+                        self.subscribe(block.subject['user'], block.text, block['From'], block.subject['message_id'], block.subject['token'])
                     elif block.subject['topic'] == config.TOPICS['UNSUBSCRIPTION']:
-                        self.unsubscribe(block.subject['user'], block.text, block['From'], block.id, block.subject['token'])
+                        self.unsubscribe(block.subject['user'], block.text, block['From'], block.subject['message_id'], block.subject['token'])
                     else:
                         # block.subject['topic'] == config.TOPICS['CREATE']
-                        self.create_event(block.subject['user'], block.text, block['From'], block.id, block.subject['token'])
+                        self.create_event(block.subject['user'], block.text, block['From'], block.subject['message_id'], block.subject['token'])
 
 
 def main(server_email_addr: str = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6)),

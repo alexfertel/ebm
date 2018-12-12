@@ -64,7 +64,6 @@ class Broker:
             logger.info(f'{block}')
             if block.subject.get('protocol', None) == PROTOCOLS['CONFIG']:
                 self._config_queue.append(block)
-                print(f'id en MTA : {id(self._config_queue)}')
             else:
                 self._data_queue.append(block)
 
@@ -154,7 +153,7 @@ class Broker:
 
         b = None
         for block in items:
-            b = open(f'{os.path.join(config.UPLOAD_FOLDER,block.id)}', 'r')
+            b = open(f'{os.path.join(UPLOAD_FOLDER_SRC,block.id)}', 'r')
             f.write(block.text)
 
         if b:
