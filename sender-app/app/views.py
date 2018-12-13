@@ -126,7 +126,7 @@ def send_file(file_location, target, type):
 
         # TODO: cambia 1000 por el tamanno maximo permitido
         for _ in range(int(size / 1000)):
-            # TODO: mandar correro con esta info
+            # TODO: mandar correo con esta info
             # (self, user: str, data: str, name: str)
             ebmc.send(target, file.read(1000), file.name)
 
