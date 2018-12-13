@@ -90,13 +90,13 @@ class EBMC:
                         email = item.text
                         self.mta.config_queue.remove(item)
                         msg_data = self.mta.build_message(body= file.read(1000), protocol=PROTOCOLS['DATA'], topic=TOPICS['ANSWER'],
-                                                          name=file.name, user=self.user_info.active_email, token=self.token)
+                                                          name=file, user=self.user_info.active_email, token=self.token)
                         msg_data.send(self.mta, email)
 
                     if size % 1000:
                         msg_data = self.mta.build_message(body=file.read(size % 1000), protocol=PROTOCOLS['DATA'],
                                                           topic=TOPICS['ANSWER'],
-                                                          name=file.name, user=self.user_info.active_email,
+                                                          name=file, user=self.user_info.active_email,
                                                           token=self.token)
                         msg_data.send(self.mta, email, self.user_info)
 
@@ -127,14 +127,14 @@ class EBMC:
                         email = item.text
                         self.mta.config_queue.remove(item)
                         msg_data = self.mta.build_message(body= file.read(1000), protocol=PROTOCOLS['DATA'], topic=TOPICS['PUBLICATION'],
-                                                          name=file.name, user=self.user_info.active_email, token=self.token)
+                                                          name=name, user=self.user_info.active_email, token=self.token)
                         for email in emails:
                             msg_data.send(self.mta, email,self.user_info)
 
                     if size % 1000:
                         msg_data = self.mta.build_message(body=file.read(size % 1000), protocol=PROTOCOLS['DATA'],
                                                           topic=TOPICS['PUBLICATION'],
-                                                          name=file.name, user=self.user_info.active_email,
+                                                          name=file, user=self.user_info.active_email,
                                                           token=self.token)
                         for email in emails:
                             msg_data.send(self.mta, email, self.user_info)
