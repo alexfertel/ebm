@@ -45,9 +45,9 @@ def upload_file():
 
         #
         if request.form['radio'] == 'p2p':
-            ebmc.send(request.form['target'], file_location, file.name)
+            ebmc.send(request.form['target'], file_location, filename)
         else:
-            ebmc.publish(request.form['target'], file_location, file.name)
+            ebmc.publish(request.form['target'], file_location, filename)
 
         return redirect('/index')
     return 'not ok'
