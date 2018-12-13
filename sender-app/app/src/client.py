@@ -86,14 +86,14 @@ class EBMC:
                 with open(file_location, 'r') as file:
                     size = os.path.getsize(file_location)
                     email = item.text
-                    for _ in range(int(size / 1000)):
+                    for _ in range(int(size / 1000000)):
                         # self.mta.config_queue.remove(item)
-                        msg_data = self.mta.build_message(body=file.read(1000), protocol=PROTOCOLS['DATA'], topic=TOPICS['ANSWER'],
+                        msg_data = self.mta.build_message(body=file.read(1000000), protocol=PROTOCOLS['DATA'], topic=TOPICS['ANSWER'],
                                                           name=name, user=self.user_info.active_email, token=self.token)
                         msg_data.send(self.mta, email, self.user_info)
 
-                    if size % 1000:
-                        msg_data = self.mta.build_message(body=file.read(size % 1000), protocol=PROTOCOLS['DATA'],
+                    if size % 1000000:
+                        msg_data = self.mta.build_message(body=file.read(size % 1000000), protocol=PROTOCOLS['DATA'],
                                                           topic=TOPICS['ANSWER'],
                                                           name=name, user=self.user_info.active_email,
                                                           token=self.token)
@@ -121,17 +121,17 @@ class EBMC:
 
                 with open(file_location, 'r') as file:
                     size = os.path.getsize(file_location)
-                    # TODO: cambia 1000 por el tamanno maximo permitido
-                    for _ in range(int(size / 1000)):
+                    # TODO: cambia 1000000 por el tamanno maximo permitido
+                    for _ in range(int(size / 1000000)):
                         email = item.text
                         # self.mta.config_queue.remove(item)
-                        msg_data = self.mta.build_message(body=file.read(1000), protocol=PROTOCOLS['DATA'], topic=TOPICS['PUBLICATION'],
+                        msg_data = self.mta.build_message(body=file.read(1000000), protocol=PROTOCOLS['DATA'], topic=TOPICS['PUBLICATION'],
                                                           name=name, user=self.user_info.active_email, token=self.token)
                         for email in emails:
                             msg_data.send(self.mta, email,self.user_info)
 
-                    if size % 1000:
-                        msg_data = self.mta.build_message(body=file.read(size % 1000), protocol=PROTOCOLS['DATA'],
+                    if size % 1000000:
+                        msg_data = self.mta.build_message(body=file.read(size % 1000000), protocol=PROTOCOLS['DATA'],
                                                           topic=TOPICS['PUBLICATION'],
                                                           name=name, user=self.user_info.active_email,
                                                           token=self.token)
