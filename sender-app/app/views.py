@@ -103,7 +103,11 @@ def settings():
         # request.form['pwd']
         # request.form['email']
         # ebmc = EBMC()
-        return redirect('/')
+
+        ebmc = EBMC(request.form['email'], request.form['email_server'],
+                    'correo.estudiantes.matcom.uh.cu', request.form['pwd'])
+
+        return redirect('/index')
     return render_template('settings.html')
 
 
