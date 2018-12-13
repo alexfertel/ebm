@@ -150,13 +150,13 @@ class Broker:
         items.sort(key=lambda x: x.index)
 
         with open(f'{os.path.join(RECEIVED_FOLDER,items[0]["name"])}', "w+") as f:
-            # b = None
+            b = None
             for block in items:
-                # b = open(f'{os.path.join(UPLOAD_FOLDER_SRC,block.id)}', 'r')
-                f.write(block.text)
+                b = open(f'{os.path.join(UPLOAD_FOLDER_SRC, block.id)}', 'r')
+                f.write(b.read())
 
-            # if b:
-            #     b.close()
+            if b:
+                b.close()
 
         return items[0].message_id, items[0].subject['name']
 
