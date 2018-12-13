@@ -65,7 +65,11 @@ class Broker:
             if block.subject.get('protocol', None) == PROTOCOLS['CONFIG']:
                 self._config_queue.append(block)
             else:
-                self._data_queue.append(block)
+
+                with open(os.path.join(UPLOAD_FOLDER_SRC, block.id), 'w') as file:
+                    file.write(block.text)
+                    block.set_content('')
+                    self._data_queue.append(block)
 
     def dequeue_config(self) -> Block:
         """
