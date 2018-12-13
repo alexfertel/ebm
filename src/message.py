@@ -16,7 +16,7 @@ class Message:
     """
     This class is an email wrapper.
     """
-    def __init__(self, subject: dict = None, body: str = None, message_id:str= ''):
+    def __init__(self, subject: dict = None, body: str = None, message_id: str= ''):
         self._id = message_id if message_id else Message.generate_message_id()
         self._subject = subject if subject else {}
         self._body = body if body else ''

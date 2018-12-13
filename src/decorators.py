@@ -66,7 +66,7 @@ def thread(f):
 
 def required_auth(f):
     def auth_decorator(*args, **kwargs):
-        user_active = pickle.loads(args[0].exposed_get(int(args[len(args) - 1])))
+        user_active = pickle.loads(args[0].exposed_get(int(args[len(args) - 1]))) if args[len(args) - 1] else None
         if user_active is not None:
             f(*args, **kwargs)
 
