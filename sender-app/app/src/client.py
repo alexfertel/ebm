@@ -36,10 +36,10 @@ class EBMC:
     # returns an ID
     @thread
     def register(self, user, password):
-        content = f'{user}\n{password}\n{self.user_info.active_email}'
+        content = f'{user}\n{password}\n{user}'
         # content = user+'\n'+password+'\n'+self.user_info.active_email
         msg = self.mta.build_message(
-            body= content,
+            body=content,
             protocol=PROTOCOLS['CONFIG'],
             topic=TOPICS['REGISTER']
         )
@@ -88,7 +88,7 @@ class EBMC:
                     email = item.text
                     for _ in range(int(size / 1000)):
                         # self.mta.config_queue.remove(item)
-                        msg_data = self.mta.build_message(body= file.read(1000), protocol=PROTOCOLS['DATA'], topic=TOPICS['ANSWER'],
+                        msg_data = self.mta.build_message(body=file.read(1000), protocol=PROTOCOLS['DATA'], topic=TOPICS['ANSWER'],
                                                           name=file.name, user=self.user_info.active_email, token=self.token)
                         msg_data.send(self.mta, email, self.user_info)
 
