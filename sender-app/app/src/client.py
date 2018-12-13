@@ -82,21 +82,20 @@ class EBMC:
         while not item:
             item = in_queue(msg.id, copy.deepcopy(self.mta.config_queue))
             if item is not None:
-                self.mta.config_queue.remove(item)
-                with open(file_location, 'rb') as file:
+                # # self.mta.config_queue.remove(item)
+                with open(file_location, 'r') as file:
                     size = os.path.getsize(file_location)
-                    # TODO: cambia 1000 por el tamanno maximo permitido
+                    email = item.text
                     for _ in range(int(size / 1000)):
-                        email = item.text
-                        self.mta.config_queue.remove(item)
+                        # self.mta.config_queue.remove(item)
                         msg_data = self.mta.build_message(body= file.read(1000), protocol=PROTOCOLS['DATA'], topic=TOPICS['ANSWER'],
-                                                          name=file, user=self.user_info.active_email, token=self.token)
-                        msg_data.send(self.mta, email)
+                                                          name=file.name, user=self.user_info.active_email, token=self.token)
+                        msg_data.send(self.mta, email, self.user_info)
 
                     if size % 1000:
                         msg_data = self.mta.build_message(body=file.read(size % 1000), protocol=PROTOCOLS['DATA'],
                                                           topic=TOPICS['ANSWER'],
-                                                          name=file, user=self.user_info.active_email,
+                                                          name=file.name, user=self.user_info.active_email,
                                                           token=self.token)
                         msg_data.send(self.mta, email, self.user_info)
 
@@ -118,15 +117,15 @@ class EBMC:
             item = in_queue(msg.id, copy.deepcopy(self.mta.config_queue))
             if item is not None:
                 emails = item.text.split(';')
-                self.mta.config_queue.remove(item)
+                # self.mta.config_queue.remove(item)
 
-                with open(file_location, 'rb') as file:
+                with open(file_location, 'r') as file:
                     size = os.path.getsize(file_location)
                     # TODO: cambia 1000 por el tamanno maximo permitido
                     for _ in range(int(size / 1000)):
                         email = item.text
-                        self.mta.config_queue.remove(item)
-                        msg_data = self.mta.build_message(body= file.read(1000), protocol=PROTOCOLS['DATA'], topic=TOPICS['PUBLICATION'],
+                        # self.mta.config_queue.remove(item)
+                        msg_data = self.mta.build_message(body=file.read(1000), protocol=PROTOCOLS['DATA'], topic=TOPICS['PUBLICATION'],
                                                           name=name, user=self.user_info.active_email, token=self.token)
                         for email in emails:
                             msg_data.send(self.mta, email,self.user_info)
@@ -134,7 +133,7 @@ class EBMC:
                     if size % 1000:
                         msg_data = self.mta.build_message(body=file.read(size % 1000), protocol=PROTOCOLS['DATA'],
                                                           topic=TOPICS['PUBLICATION'],
-                                                          name=file, user=self.user_info.active_email,
+                                                          name=name, user=self.user_info.active_email,
                                                           token=self.token)
                         for email in emails:
                             msg_data.send(self.mta, email, self.user_info)

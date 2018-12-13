@@ -148,17 +148,15 @@ class Broker:
         :return: (message_id, data)
         """
         items.sort(key=lambda x: x.index)
-        # TODO: poner la propiedad name a block
-        f = open(f'{os.path.join(RECEIVED_FOLDER,items[0]["name"])}', "w+")
 
-        b = None
-        for block in items:
-            b = open(f'{os.path.join(UPLOAD_FOLDER_SRC,block.id)}', 'r')
-            f.write(block.text)
+        with open(f'{os.path.join(RECEIVED_FOLDER,items[0]["name"])}', "w+") as f:
+            # b = None
+            for block in items:
+                # b = open(f'{os.path.join(UPLOAD_FOLDER_SRC,block.id)}', 'r')
+                f.write(block.text)
 
-        if b:
-            b.close()
-        f.close()
+            # if b:
+            #     b.close()
 
         return items[0].message_id, items[0].subject['name']
 
@@ -206,7 +204,7 @@ class Broker:
             for uid, message in imbox.messages(unread=True):
                 unread.append(message)  # For now just append to the queue
                 # TODO: uncomment
-                #imbox.delete(uid)
+                # imbox.delete(uid)
                 imbox.mark_seen(uid)
 
         return unread
@@ -246,7 +244,6 @@ class Broker:
                 'user': user,
                 'name': name,
                 'token': token
-            },
-            message_id=message_id)
+            }, message_id=message_id)
 
         return msg

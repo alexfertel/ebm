@@ -16,9 +16,12 @@ class Message:
     """
     This class is an email wrapper.
     """
-    def __init__(self, subject: dict = None, body: str = None, message_id:str= ''):
-        self._id = message_id if message_id else Message.generate_message_id()
+    def __init__(self, subject: dict = None, body: str = None, message_id:str = ''):
+        self._id = Message.generate_message_id()
         self._subject = subject if subject else {}
+
+        self._subject['message_id'] = self._id if not message_id else message_id
+
         self._body = body if body else ''
         self._blocks = []
         self.unwrap(self.body)
@@ -105,8 +108,8 @@ class Message:
         bid = Block.generate_block_id(self)
         subjectcopy = copy.copy(self.subject)
         subjectcopy.update({
-            'block_id': bid,
-            'message_id': self.id
+            'block_id': bid
+            # 'message_id': self.id
         })
         block = Block(bid,
                       subject=subjectcopy,

@@ -507,11 +507,11 @@ class EBMS(rpyc.Service):
         exists = self.exposed_get(user_id)
         user_mail = pickle.loads(exists)['mail'] if exists else None
         if user_mail:
-            msg = self.mta.build_message(user_mail, protocol=config.PROTOCOLS['DATA'], topic=config.TOPICS['ANSWER'],
+            msg = self.mta.build_message(user_mail, protocol=config.PROTOCOLS['CONFIG'], topic=config.TOPICS['ANSWER'],
                                          message_id=message_id)
         else:
             logger.info(f'User {user} not found in chord')
-            msg = self.mta.build_message('ERROR', protocol=config.PROTOCOLS['DATA'],
+            msg = self.mta.build_message('ERROR', protocol=config.PROTOCOLS['CONFIG'],
                                          topic=config.TOPICS['ANSWER'], message_id=message_id)
         msg.send(self.mta, email_client, self.server_info)
 
