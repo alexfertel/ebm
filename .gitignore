@@ -49,3 +49,4 @@ src/data.json
 build
 ebmc.egg-info
 ebms*
+sender-app/app/src/uploads/*

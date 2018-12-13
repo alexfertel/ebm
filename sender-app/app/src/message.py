@@ -16,18 +16,22 @@ class Message:
     """
     This class is an email wrapper.
     """
-    def __init__(self, subject: dict = None, body: str = None, message_id:str = ''):
-        self._id = Message.generate_message_id()
-        self._subject = subject if subject else {}
 
-        self._subject['message_id'] = self._id if not message_id else message_id
+    def __init__(self, subject: dict = None, body: str = None, message_id: str = ''):
+        # self._id = Message.generate_message_id()
+        self._subject = subject if subject else {}
 
         self._body = body if body else ''
         self._blocks = []
-        self.unwrap(self.body)
+
+        self.block_amount = 0
+        self.unwrap(self.body, message_id)
 
     def __len__(self):
         return len(self._blocks)
+
+    def __eq__(self, other):
+        return self.id == other.id
 
     def __repr__(self):
         representation = f'\nMessage:\n\tID: {self._id}\n\tBlocks: [\n\t\t'
@@ -71,13 +75,13 @@ class Message:
         return self._body
 
     @staticmethod
-    def generate_message_id():
+    def generate_message_id(count=0):
         """
         Should think of a way to generate message ids in order to keep
         them unique but to be easily mappable to its blocks.
         :return: int | string
         """
-        return 'M' + str(int(time.time() * 10000000))
+        return 'M' + str(int(time.time() * 10000000)) + 'C' + str(count)
 
     @staticmethod
     def match_block_with_message(block, messages):
@@ -115,18 +119,23 @@ class Message:
                       subject=subjectcopy,
                       text=text)
 
-        block.set_message(self)  # Set self as the message of the new Block
+        block.set_message(self.id)  # Set self as the message of the new Block
 
         self._blocks.append(block)  # Add the new Block to this Message (self) blocks
 
-    def unwrap(self, body: str) -> None:
+    def unwrap(self, body: str, message_id) -> None:
         """
         Builds the blocks of a message. Given a text, unwrap() cuts it
         in pieces and makes them blocks of self (an instance of Message)
         :param body: str
+        :param message_id: int
         :return: None
         """
-        for item in cut(body):
+        pieces = cut(body)
+        self.block_amount = len(pieces)
+        self._id = Message.generate_message_id(self.block_amount)
+        self._subject['message_id'] = self._id if not message_id else message_id
+        for item in pieces:
             self.add(item)
 
     def send(self,

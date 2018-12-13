@@ -40,7 +40,7 @@ class Broker:
 
         self.fetch()  # Start a thread to fetch emails
 
-        self.loop()  # Start a thread to process emails
+        self.update()  # Start a thread to process emails
 
     def __str__(self):
         queue = '*' * 25 + ' Queue ' + '*' * 25 + '\n' + f'{self._config_queue}' + '\n'
@@ -106,14 +106,13 @@ class Broker:
 
         subject = block.subject
 
-        if block.message in self.messages:
-            self.messages[block.message].push(block)
+        if subject['message_id'] in self.messages.keys():
+            self.messages[subject['message_id']].push(block)
         else:
-            self.messages[block.message] = [block]
+            self.messages[subject['message_id']] = [block]
 
-        if len(self.messages[block.message]) == len(list(filter(lambda x: x[0] == block.message,
-                                                                self.messages.items()))[0][0]):
-            self.complete_messages.append(Broker.merge(self.messages[block.message]))
+        if len(self.messages[subject['message_id']]) == subject['message_id'].split('N')[1].split('B')[0]:
+            self.complete_messages.append(Broker.merge(self.messages[subject['message_id']]))
 
         # Parse the subject and get the identifier
         # identifier = 'None or some identifier should be here after parsing'
@@ -122,8 +121,8 @@ class Broker:
         # See what message it belongs to, insert it and check the message's lifetime
         # Message.match_block_with_message(incoming_block, self.messages)
 
-    @retry
-    def loop(self):
+    @thread
+    def update(self):
         while True:
             print(self)
 
@@ -156,11 +155,9 @@ class Broker:
         with open(f'{os.path.join(RECEIVED_FOLDER,items[0]["name"])}', "w+") as f:
             b = None
             for block in items:
-                b = open(f'{os.path.join(UPLOAD_FOLDER_SRC, block.id)}', 'r')
-                f.write(b.read())
-
-            if b:
-                b.close()
+                with open(f'{os.path.join(UPLOAD_FOLDER_SRC, block.id)}', 'r') as b:
+                    b = open()
+                    f.write(b.read())
 
         return items[0].message_id, items[0].subject['name']
 
