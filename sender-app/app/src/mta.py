@@ -111,7 +111,7 @@ class Broker:
         else:
             self.messages[subject['message_id']] = [block]
 
-        if len(self.messages[subject['message_id']]) == subject['message_id'].split('N')[1].split('B')[0]:
+        if len(self.messages[subject['message_id']]) == subject['message_id'].split('C')[1].split('B')[0]:
             self.complete_messages.append(Broker.merge(self.messages[subject['message_id']]))
 
         # Parse the subject and get the identifier
