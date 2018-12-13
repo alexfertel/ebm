@@ -1,23 +1,28 @@
 from flask import render_template, Blueprint, request, redirect
 from werkzeug.utils import secure_filename
 from config import UPLOAD_FOLDER, TOKEN, RECEIVED_FOLDER
-from . import utils
+from .src.client import EBMC
+
 import os
 import time
 from datetime import date
-from .src.client import EBMC
-
-
-ebmc = EBMC('s.martin@estudiantes.matcom.uh.cu', 'a.fertel@estudiantes.matcom.uh.cu', 'correo.estudiantes.matcom.uh.cu', '#1S1m0l5enet')
-
-# from src.client import EBMC
 
 view: Blueprint = Blueprint('views', __name__)
 
+ebmc = ''
 
-@view.route('/', methods=['GET', 'POST'])
+@view.route('/')
+def init():
+    global ebmc
+    print('Creo ebmc en init')
+    ebmc = EBMC('s.martin@estudiantes.matcom.uh.cu', 'a.fertel@estudiantes.matcom.uh.cu',
+                'correo.estudiantes.matcom.uh.cu', '#1S1m0l5enet')
+    return redirect('/index')
+
+
+@view.route('/index', methods=['GET', 'POST'])
 def index(error=''):
-    file_info = utils.get_files()
+    file_info = get_files()
     return render_template('index.html', files=file_info, error=error)
 
 
@@ -38,21 +43,25 @@ def upload_file():
         file_location = os.path.join(UPLOAD_FOLDER, filename)
         file.save(file_location)
 
-        utils.send_file(file_location, request.form['target'], request.form['radio'])
+        #
+        if request.form['radio'] == 'p2p':
+            ebmc.send(request.form['target'], file_location, file.name)
+        else:
+            ebmc.publish(request.form['target'], file_location, file.name)
 
-        return redirect('/')
+        return redirect('/index')
     return 'not ok'
 
 
 @view.route('/login', methods=['POST'])
 def login():
-    ebmc.login(request.form['email'],request.form['pass'])
+    ebmc.login(request.form['email'], request.form['pass'])
     # token = ebm.login(request.form['email'],request.form['pass'])
     start = time.time()
     while True:
         if ebmc.token:
-            TOKEN = token
-            return redirect('/')
+            TOKEN = ebmc.token
+            return redirect('/index')
         if time.time() - start > 40:
             break
 
@@ -63,10 +72,9 @@ def login():
 
 @view.route('/sing-up', methods=['GET', 'POST'])
 def register():
-
     if request.method == 'POST':
         ebmc.register(request.form['email'], request.form['pwd'])
-        return redirect('/')
+        return redirect('/index')
     return render_template('register.html')
 
 
@@ -75,7 +83,7 @@ def subscribe():
     # ebm.subscribe(request.form['event'], TOKEN)
     ebmc.subscribe(request.form['event'])
     # hay q hacer un unsubscribe
-    return redirect('/')
+    return redirect('/index')
 
 
 @view.route('/create-event', methods=['POST'])
@@ -83,7 +91,7 @@ def create_event():
     # TODO: ver si implementar esto,
     ebmc.create_event(request.form['event'])
 
-    return redirect('/')
+    return redirect('/index')
 
 
 @view.route('/settings', methods=['GET', 'POST'])
@@ -95,11 +103,12 @@ def settings():
         # request.form['pwd']
         # request.form['email']
         # ebmc = EBMC()
-        return redirect('/')
+
+        ebmc = EBMC(request.form['email'], request.form['email_server'],
+                    'correo.estudiantes.matcom.uh.cu', request.form['pwd'])
+
+        return redirect('/index')
     return render_template('settings.html')
-
-
-
 
 
 def get_files():
@@ -113,23 +122,6 @@ def get_files():
     return file_info
 
 
-def send_file(file_location, target, type):
-    file = open(file_location)
-    size = os.path.getsize(file_location)
 
-    # TODO: cambia 1000 por el tamanno maximo permitido
-    for target in range(int(size / 1000)):
 
-        # TODO: mandar correro con esta info
-        # (self, user: str, data: str, name: str)
-        ebmc.send('sandor', file.read(1000), file.name)
-
-    if size % 1000:
-        ebmc.send('sandor', file.read(size % 1000), file.name)
-
-        # mandar correro con esta info
-    file.close()
-    os.remove(file_location)
-    # TODO: buscar como borrar los archivos, ya que no es necsarios q
-    # persistan en el cliente una vez q se mandaron
 

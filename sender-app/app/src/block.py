@@ -12,6 +12,7 @@ class Block(EmailMessage):
     """
     This class represents the structure of a block.
     """
+
     def __init__(self,
                  identifier,
                  subject: dict = None,
@@ -55,7 +56,7 @@ class Block(EmailMessage):
 
     @property
     def text(self):
-        return self.get_content()
+        return self.get_content().strip()
 
     @property
     def id(self):

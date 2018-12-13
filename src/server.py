@@ -1,4 +1,6 @@
 #!/usr/bin/env python3.6
+import time
+
 import config
 import copy
 import fire
@@ -30,14 +32,14 @@ class EBMS(rpyc.Service):
         self.active_users = []
 
         # Chord setup
-        self.__id = int(hashlib.sha1(str(server_email_addr).encode()).hexdigest(), 16)
+        self.__id = hashing(server_email_addr) if server_email_addr else hashing(''.join(random.choices(string.ascii_lowercase + string.digits, k=6)))
         # Compute  Table computable properties (start, interval).
 
         self.server_info = User(server_email_addr, pwd)
         # self.server_info = None  # Testing purposes
 
         # Setup broker
-        self.mta = Broker(email_server, self.server_info)
+        self.mta = Broker(email_server, self.server_info) if server_email_addr else None
         # self.mta = None  # Testing purposes
 
         # The  property is computed when a joins or leaves and at the chord start
@@ -216,8 +218,9 @@ class EBMS(rpyc.Service):
         logger.info(f'Start checking ownership of data')
         self.check_ownership()
 
-        logger.info(f'Start multiplexing in: {self.exposed_identifier()}')
-        self.multiplexer()
+        if self.mta:
+            logger.info(f'Start multiplexing in: {self.exposed_identifier()}')
+            self.multiplexer()
 
     # periodically verify n's immediate succesor,
     # and tell the exposed_successor about n.
@@ -299,12 +302,16 @@ class EBMS(rpyc.Service):
         elif replica:
             return pickle.dumps(replica)
         else:
-            if inbetween(self.exposed_predecessor()[0] + 1, self.exposed_identifier(), key):
-                logger.info(f"This key {key} belongs to us, but we don't have it, thus chord doesn't have it")
-                return None
+            if self.exposed_predecessor() != 'unknown':
+                if inbetween(self.exposed_predecessor()[0] + 1, self.exposed_identifier(), key):
+                    logger.info(f"This key {key} belongs to us, but we don't have it, thus chord doesn't have it")
+                    return None
+                else:
+                    succ = self.exposed_find_successor(key)
+                    return self.remote_request(succ[1], 'get', key)
             else:
-                succ = self.exposed_find_successor(key)
-                return self.remote_request(succ[1], 'get', key)
+                time.sleep(1)
+                return self.exposed_get(key)
 
     # value param must be a 'pickled' object
     def exposed_set(self, key, value):
@@ -559,21 +566,21 @@ class EBMS(rpyc.Service):
                 if block.subject['protocol'] == config.PROTOCOLS['CONFIG']:
                     if block.subject['topic'] == config.TOPICS['REGISTER']:
                         user_pass_email = block.text.split('\n')
-                        self.register(user_pass_email[0], user_pass_email[1], user_pass_email[2], block.id)
+                        self.register(user_pass_email[0], user_pass_email[1], user_pass_email[2], block.subject['message_id'])
                     elif block.subject['topic'] == config.TOPICS['LOGIN']:
                         user_pass = block.text.split('\n')
-                        self.login(user_pass[0], user_pass[1], block['From'], block.id)
+                        self.login(user_pass[0], user_pass[1], block['From'], block.subject['message_id'])
                     elif block.subject['topic'] == config.TOPICS['CMD']:
-                        self.send(block.text, block['From'], block.id, block.subject['token'])
+                        self.send(block.text, block['From'], block.subject['message_id'], block.subject['token'])
                     elif block.subject['topic'] == config.TOPICS['PUBLICATION']:
-                        self.publish(block.subject['user'], block.text, block['From'], block.id, block.subject['token'])
+                        self.publish(block.subject['user'], block.text, block['From'], block.subject['message_id'], token=block.subject['token'])
                     elif block.subject['topic'] == config.TOPICS['SUBSCRIPTION']:
-                        self.subscribe(block.subject['user'], block.text, block['From'], block.id, block.subject['token'])
+                        self.subscribe(block.subject['user'], block.text, block['From'], block.subject['message_id'], token=block.subject['token'])
                     elif block.subject['topic'] == config.TOPICS['UNSUBSCRIPTION']:
-                        self.unsubscribe(block.subject['user'], block.text, block['From'], block.id, block.subject['token'])
+                        self.unsubscribe(block.subject['user'], block.text, block['From'], block.subject['message_id'], token=block.subject['token'])
                     else:
                         # block.subject['topic'] == config.TOPICS['CREATE']
-                        self.create_event(block.subject['user'], block.text, block['From'], block.id, block.subject['token'])
+                        self.create_event(block.subject['user'], block.text, block['From'], block.subject['message_id'], token=block.subject['token'])
 
 
 def main(server_email_addr: str = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6)),
@@ -591,9 +598,9 @@ def main(server_email_addr: str = ''.join(random.choices(string.ascii_lowercase 
     t.start()
 
 
-def deploy(server_email_addr: str,
-           pwd: str,
-           email_server: str,
+def deploy(server_email_addr: str = None,
+           pwd: str = None,
+           email_server: str = None,
            join_addr: tuple = None,
            ip_addr: tuple = None):
     """

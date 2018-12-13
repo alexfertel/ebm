@@ -27,12 +27,5 @@ def inbetween(a, b, c):
     return a <= c or c <= b
 
 
-def in_queue(id: str, queue: list):
-    for item_id, item in queue:
-        if id == item_id:
-            return item
-    return None
-
-
 def hashing(obj):
     return int(hashlib.sha1(str(obj).encode()).hexdigest(), 16)

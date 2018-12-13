@@ -54,7 +54,7 @@ class Block(EmailMessage):
 
     @property
     def text(self):
-        return self.get_content()
+        return self.get_content().strip()
 
     @property
     def id(self):

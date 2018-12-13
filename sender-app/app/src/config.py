@@ -1,8 +1,8 @@
 import os
 
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-UPLOAD_FOLDER = os.path.join(BASE_DIR, 'src/uploads')
+BASE_DIR_SRC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+UPLOAD_FOLDER_SRC = os.path.join(BASE_DIR_SRC , 'src/uploads')
 
 
 MESSAGE_LENGTH = 1000000
